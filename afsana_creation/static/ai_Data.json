@@ -1,0 +1,92 @@
+{
+  "schema_version": "2.0",
+
+  "brand": {
+  "text": [
+    "Arabica Heritage Coffee, established in 1988, is a premium Arabica brand known for ethical sourcing, consistent quality, and long‑term farmer partnerships. Rooted in ancient coffee traditions, the brand blends heritage cultivation with modern sustainable craft.",
+    "Primary origins: Ethiopia, Colombia, and Brazil — regions known for high‑altitude Arabica beans.",
+    "Positioned as a premium Arabica producer combining coffee craftsmanship with artisan serveware."
+  ],
+  "images": [
+    "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee1.png",
+    "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffees2.png"
+  ]
+},
+
+  "product": {
+    "title": "100% Arabica Coffee – Estate Medium Roast",
+    "category": "Coffee & Daily Use",
+    "status": "active",
+
+    "coffee_story": {
+      "gardening": "Arabica plants grown under natural shade trees using rain‑fed irrigation and organic soil enrichment.",
+      "harvesting": "Hand‑picked cherries at peak ripeness to preserve sweetness and aroma.",
+      "processing": "Traditional washed process followed by slow sun‑drying on raised beds.",
+      "roasting": "Small‑batch drum roasting to highlight natural chocolate and caramel notes.",
+      "grinding": "Stone‑controlled grinding for uniform particle size and balanced extraction.",
+      "images": [
+        "https://cryptocafe.madrid/cdn/shop/articles/0_2.png?v=1697274335",
+        "https://images.squarespace-cdn.com/content/v1/641bb78677bbba659a5bc7c8/1684272431681-RXZF41YMTT1KYPN4Y3HS/image-asset.jpeg"
+      ]
+    },
+
+    "taste_and_health": {
+      "flavor": "Smooth chocolate base with light caramel sweetness and mild citrus finish",
+      "aroma": "Warm roasted beans with earthy undertones",
+      "body": "Medium, clean mouthfeel",
+      "health": "Rich in antioxidants, supports focus and metabolism when consumed moderately",
+      "recommended_use": "Ideal for daily morning and afternoon cups",
+      "images": [
+        "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee_cup.png"
+      ]
+    },
+
+    "cups_and_jugs": {
+      "materials": "Natural clay and borosilicate glass",
+      "craft": "Hand‑shaped, kiln‑fired, and painted using mineral‑based natural pigments",
+      "durability": "Heat‑resistant, long‑lasting, and flavor‑neutral",
+      "daily_use": "Designed for coffee, tea, and herbal infusions",
+      "images": [
+        "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffeeStuff2.png",
+        "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffeeStuff3.png"
+      ]
+    },
+
+    "environment_and_sustainability": {
+      "raw_materials": "Locally sourced clay, recyclable glass, compostable coffee packaging",
+      "process": "Low‑energy firing, water‑efficient washing, zero‑plastic policy",
+      "impact": "Reduced carbon footprint and long product lifecycle",
+      "certification": "Organic farming and fair‑trade compliant",
+      "images": [
+        "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee7.png"
+      ]
+    },
+
+    "authentication_and_quality": {
+      "coffee_authentication": "Batch‑coded origin verification from farm to roast",
+      "serveware_authentication": "Material purity tests and food‑safe glazing",
+      "quality_checks": "Taste cupping, durability testing, and packaging inspection",
+      "images": [
+        "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee4.png"
+      ]
+    },
+
+    "ai_ready": {
+      "ui_sections": [
+        "brand",
+        "coffee_story",
+        "taste_and_health",
+        "cups_and_jugs",
+        "environment_and_sustainability",
+        "authentication_and_quality"
+      ],
+      "intent_examples": [
+        "Tell me about Arabica coffee",
+        "How is this coffee made?",
+        "Are these cups eco‑friendly?",
+        "Is this healthy for daily use?"
+      ]
+    }
+  }
+}
+
