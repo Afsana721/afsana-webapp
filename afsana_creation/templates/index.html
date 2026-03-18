@@ -1,0 +1,60 @@
+<!-- ================= index.html ================= -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Project Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gold: '#d4af37',
+            darkred: '#2b0000',
+            blackbase: '#050505'
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-[#76c893] text-slate-200">
+  <header class="max-w-5xl h-96 mt-24 bg-black border-b border-gold/60  mx-auto px-8 flex items-center  ">
+    <div class="max-w-7xl mx-auto px-8 py-8 flex justify-center items-center">
+      <h1 class="text-5xl font-bold">AptiCraft</h1>
+      </div>
+  </header>
+    <!-- NAV -->
+    <!-- NAV -->
+  <nav class="max-w-7xl h-96 mt-48 bg-black border-b border-gold/60 mt-24 mx-auto px-8 flex items-center justify-between relative z-50 ">
+    <div class="max-w-7xl mx-auto px-8 py-8 flex justify-center items-center">
+            <div class="flex gap-10 text-2xl font-semibold">
+        <a href="{{ url_for('index') }}" target="_blank" class="text-gold hover:text-white">Index</a>
+        <a href="{{ url_for('design') }}" target="_blank" class="text-gold hover:text-white">Design</a>
+        <a href="{{ url_for('calendar') }}" target="_blank" class="text-gold hover:text-white">Calendar</a>
+        <a href="{{ url_for('gallery')}}" class="text-gold hover:text-white">Gallery</a>
+        <a href="{{ url_for('craftFlow')}}" class="text-gold hover:text-white">Craft Flow</a>
+        <a href="{{ url_for('health2')}}" class="text-gold hover:text-white">Health2</a>
+        <a href="{{url_for('extended')}}" class="text-gold hover:text-white">Extended</a>
+        <a href="{{url_for('valentine')}}" class="text-gold hover:text-white">Valentine</a>
+        <a href="{{url_for('footer')}}" class="text-gold hover:text-white">Footer</a>
+        <a href="{{url_for('new_gallery')}}" class="text-gold hover:text-white">New Gallery</a>
+        <a href="{{url_for('aptiCraft_ArcGIS')}}" class="text-gold hover:text-white">ArcGIS</a>
+      </div>
+    </div>
+  </nav>
+
+    <!-- HERO -->
+  <section class="relative py-24">
+    <div class="max-w-6xl mx-auto px-8">
+      <img src="https://i.ytimg.com/vi/Cn4G2lZ_g2I/maxresdefault.jpg" class="w-full h-[420px] object-cover border-4 border-gold" />
+    </div>
+  </section>
+
+</body>
+</html>
+
+
+

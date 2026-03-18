@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>AptiCraft | 360 Experience</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js (kept, no logic yet) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+
+<body class="bg-[#FDFCFB] font-sans">
+
+  <!-- NAV (kept) -->
+  <nav class="w-full p-8">
+    <div class="flex justify-between items-center max-w-7xl mx-auto">
+      <h1 class="text-4xl font-bold">AptiCraft</h1>
+      <div class="flex space-x-8">
+        <a href="#" class="font-bold">Home</a>
+        <a href="#" class="font-bold">Products</a>
+        <a href="#extended" class="font-bold">Experience</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- EXTENDED 360 SECTION ONLY -->
+  <section id="extended" class="relative w-full min-h-screen flex items-center justify-center px-8">
+    <div class="w-full h-[180vh] rounded-2xl overflow-hidden shadow-xl border">
+      <div id="pano" class="w-full h-full"></div>
+    </div>
+
+    <!-- JSON DATA UI OVERLAY -->
+    <section id="data" class="absolute inset-0 z-20 pointer-events-none flex items-center justify-center">
+      <div class="flex flex-col items-center text-center max-w-xl">
+        <img id="sectionImage" class="w-72 h-72 object-contain mb-6 shadow-2xl rounded-lg shadow-[#DDD06A]" alt="image" />
+        <h3 id="title" class="text-4xl font-semibold tracking-wide text-[#3D0C02] shadow-2xl shadow-[#FFFFF0]"></h3>
+        <p id="sectionText" class="mt-4 text-lg leading-relaxed text-[#F5F5DC]"></p>
+      </div>
+    </section>
+  </section>
+
+  <!-- FOOTER (kept) -->
+  <footer class="w-full p-12 text-center text-sm">
+    © 2026 AptiCraft
+  </footer>
+
+  <script>
+    // ================================
+    // 1) Marzipano loader (fix: "Marzipano is not defined")
+    // ================================
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Failed to load: ' + src));
+        document.head.appendChild(s);
+      });
+    }
+
+    async function ensureMarzipano() {
+      if (window.Marzipano) return;
+
+      // Try multiple CDNs in case one is blocked.
+      const candidates = [
+        'https://www.marzipano.net/demos/vendor/marzipano.js',
+        'https://cdn.jsdelivr.net/npm/marzipano@0.10.2/dist/marzipano.js',
+        'https://unpkg.com/marzipano@0.10.2/dist/marzipano.js'
+      ];
+
+      for (const url of candidates) {
+        try {
+          await loadScript(url);
+          if (window.Marzipano) return;
+        } catch (_) {
+          // keep trying
+        }
+      }
+
+      throw new Error('Marzipano failed to load (CDN blocked).');
+    }
+
+    // ================================
+    // 2) Marzipano init (NO JSON logic changed)
+    // ================================
+    async function initPano() {
+      await ensureMarzipano();
+
+      const M = window.Marzipano;
+      const panoEl = document.getElementById('pano');
+
+      // Defensive checks
+      console.assert(!!panoEl, '#pano element missing');
+      console.assert(!!M, 'Marzipano global missing');
+
+      const viewer = new M.Viewer(panoEl);
+
+      // ---- Marzipano scenes (multiple 360 images) ----
+      const IMAGES = [
+        'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee360.jpeg',
+        'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffeeStore.jpeg',
+        'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr_cropped_processed_by_imagy.jpg',
+        'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr2_cropped_processed_by_imagy.jpg',
+        'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr3_cropped_processed_by_imagy.jpg',
+        'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr4_cropped_processed_by_imagy.jpg',
+        'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr5_cropped_processed_by_imagy.jpg'
+      ];
+
+      const scenes = IMAGES.map(src => {
+        const source = M.ImageUrlSource.fromString(src);
+        const geometry = new M.EquirectGeometry([{ width: 4000 }]);
+        const limiter = M.RectilinearView.limit.traditional(1024, 120 * Math.PI / 180);
+        const view = new M.RectilinearView({ yaw: 0, pitch: 0, fov: Math.PI / 2 }, limiter);
+        const scene = viewer.createScene({ source, geometry, view });
+        return { scene, view };
+      });
+
+      let sIdx = 0;
+      let rotateTimer = null;
+      let switchTimer = null;
+
+      function showScene(i) {
+        const { scene, view } = scenes[i];
+        scene.switchTo({ transitionDuration: 800 });
+
+        // auto-rotate inside this 360
+        clearInterval(rotateTimer);
+        let yaw = view.yaw();
+        rotateTimer = setInterval(() => {
+          yaw += 0.0015;
+          view.setYaw(yaw);
+        }, 16);
+
+        // after rotation time, switch to next 360
+        clearTimeout(switchTimer);
+        switchTimer = setTimeout(() => {
+          clearInterval(rotateTimer);
+          sIdx = (sIdx + 1) % scenes.length;
+          showScene(sIdx);
+        }, 6000);
+      }
+
+      // pause on hover
+      panoEl.addEventListener('mouseenter', () => {
+        clearInterval(rotateTimer);
+        clearTimeout(switchTimer);
+      });
+      panoEl.addEventListener('mouseleave', () => {
+        showScene(sIdx);
+      });
+
+      // start
+      showScene(0);
+    }
+
+    // ================================
+    // 3) SERVER JSON LOGIC (unchanged)
+    // ================================
+    document.addEventListener('DOMContentLoaded', () => {
+      const titleEl = document.getElementById('title');
+      const imgEl = document.getElementById('sectionImage');
+      const textEl = document.getElementById('sectionText');
+
+      function extractText(obj) {
+        if (!obj) return '';
+        if (Array.isArray(obj)) return obj.join(' ');
+        if (Array.isArray(obj.text)) return obj.text.join(' ');
+        return Object.values(obj).filter(v => typeof v === 'string').join(' ');
+      }
+
+      let CACHE = null;
+
+      async function loadSection(key) {
+        if (!CACHE) {
+          const res = await fetch('/ai_data');
+          CACHE = await res.json();
+        }
+
+        const data = key.split('.').reduce((o, k) => o && o[k], CACHE);
+        if (!data) return;
+
+        titleEl.textContent = key.split('.').slice(-1)[0].replace(/_/g, ' ').toUpperCase();
+
+        if (Array.isArray(data.images) && data.images.length) {
+          imgEl.src = data.images[0];
+        } else {
+          imgEl.removeAttribute('src');
+        }
+
+        textEl.textContent = extractText(data);
+      }
+
+      const sections = [
+        'brand',
+        'product.coffee_story',
+        'product.taste_and_health',
+        'product.cups_and_jugs',
+        'product.environment_and_sustainability',
+        'product.authentication_and_quality'
+      ];
+
+      let idx = 0;
+      loadSection(sections[idx]);
+
+      setInterval(() => {
+        idx = (idx + 1) % sections.length;
+        loadSection(sections[idx]);
+      }, 3000);
+
+      // Start pano after DOM is ready (keeps JSON/UI separate)
+      initPano().catch(err => console.error(err));
+
+      // Minimal runtime checks
+      console.assert(typeof loadSection === 'function', 'loadSection missing');
+      console.assert(Array.isArray(sections) && sections.length > 0, 'sections must be non-empty');
+    });
+  </script>
+</body>
+
+</html>

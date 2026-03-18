@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmony | Research Collective</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Plus+Jakarta+Sans:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --snow-white: #FFFBFA;
+            --petal-pink: #FFF0F3;
+            --gold-soft: #D4AF37;
+            --gold-light: #F4E8C1;
+            --text-main: #4A4444;
+            --cyan-tech: #00f2ff;
+        }
+
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--snow-white);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, .serif { font-family: 'Marcellus', serif; }
+
+        .perspective-scene { perspective: 2000px; }
+
+        .depth-card {
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .depth-card:hover { transform: rotateY(-12deg) rotateX(6deg); }
+
+        .layer-back { transform: translateZ(-50px); }
+        .layer-mid { transform: translateZ(20px); }
+        .layer-front { transform: translateZ(80px); }
+        .layer-super-front { transform: translateZ(120px); }
+
+        .glass-luxury {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+
+        .gold-gradient {
+            background: linear-gradient(135deg, #D4AF37 0%, #F4E8C1 100%);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateZ(80px); }
+            50% { transform: translateY(-15px) translateZ(100px); }
+        }
+
+        @keyframes orbit {
+            0% { transform: translateZ(50px) translateX(0) translateY(0); }
+            25% { transform: translateZ(70px) translateX(15px) translateY(-10px); }
+            75% { transform: translateZ(70px) translateX(-15px) translateY(10px); }
+            100% { transform: translateZ(50px) translateX(0) translateY(0); }
+        }
+
+        .animate-float { animation: float 5s ease-in-out infinite; }
+        .animate-orbit { animation: orbit 8s ease-in-out infinite; }
+
+        /* Scanning Line Effect */
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, var(--gold-soft), transparent);
+            opacity: 0.8;
+            z-index: 20;
+            top: -10%;
+            animation: scan-move 6s linear infinite;
+        }
+
+        @keyframes scan-move {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+
+        /* Tech Waveform */
+        .waveform {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 30px;
+        }
+        .bar {
+            width: 3px;
+            background: var(--gold-soft);
+            animation: grow 1s ease-in-out infinite alternate;
+        }
+        @keyframes grow {
+            0% { height: 20%; }
+            100% { height: 100%; }
+        }
+
+    </style>
+</head>
+<body class="selection:bg-pink-100">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 px-8 py-4 glass-luxury flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full gold-gradient shadow-lg flex items-center justify-center">
+                <span class="text-white text-xs">H</span>
+            </div>
+            <span class="tracking-[0.3em] font-medium uppercase text-xs">Harmony Collective</span>
+        </div>
+        <div class="flex gap-8 text-[10px] font-bold uppercase tracking-widest opacity-60">
+            <a href="#diagnostics" class="hover:text-[var(--gold-soft)] transition-colors">Diagnostics</a>
+            <a href="#methodology" class="hover:text-[var(--gold-soft)] transition-colors">Lab Sync</a>
+            <a href="#" class="hover:text-[var(--gold-soft)] transition-colors">Case Wall</a>
+        </div>
+        <button class="bg-[var(--gold-soft)] text-white px-6 py-2 rounded-full text-[10px] font-bold uppercase tracking-tighter">Enter Portal</button>
+    </nav>
+
+    <main class="pt-32 pb-20">
+        
+ 
+        <section class="max-w-7xl mx-auto px-6 mb-40">
+            <div class="grid lg:grid-cols-2 gap-20 items-center">
+                <div class="relative z-10">
+                    <span class="text-[var(--gold-soft)] font-bold tracking-[0.4em] text-[10px] uppercase block mb-4">World Research Integration</span>
+                    <h1 class="text-6xl lg:text-8xl leading-none mb-8">One <span class="italic text-[var(--gold-soft)]">Mind</span><br>Infinite Reach.</h1>
+                    <p class="text-slate-500 text-lg leading-relaxed max-w-lg mb-10">
+                        Join the world's first open-sync medical research platform. We connect high-precision microscopy and labs into a single, light-speed neural network for healing.
+                    </p>
+                    <div class="flex gap-12 border-t border-pink-100 pt-8">
+                        <div>
+                            <p class="text-3xl font-light">1.2M</p>
+                            <p class="text-[9px] uppercase tracking-widest opacity-50">Data Nodes</p>
+                        </div>
+                        <div>
+                            <p class="text-3xl font-light">180+</p>
+                            <p class="text-[9px] uppercase tracking-widest opacity-50">Partner Cities</p>
+                        </div>
+                    </div>
+                </div>
+
+  
+                <div class="perspective-scene relative group">
+                    <div class="depth-card relative w-full aspect-square max-w-xl mx-auto">
+                        
+                
+                        <div class="absolute inset-0 rounded-[60px] overflow-hidden layer-back shadow-2xl border-[12px] border-white ring-1 ring-black/5">
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRSQTOQuU4lLBCmRH_beMjiTJGktJH9NHnlFg&s" class="w-full h-full object-cover contrast-125 saturate-50" alt="Microscope Feed">
+                            
+                  
+                            <div class="absolute inset-0 bg-black/10"></div>
+                            <div class="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                                <div class="w-48 h-48 border border-white rounded-full flex items-center justify-center">
+                                    <div class="w-[1px] h-full bg-white absolute"></div>
+                                    <div class="h-[1px] w-full bg-white absolute"></div>
+                                </div>
+                            </div>
+                            <div class="scan-line"></div>
+                        </div>
+
+                    
+                        <div class="absolute -right-10 top-1/4 w-48 h-64 rounded-3xl overflow-hidden border-4 border-white shadow-2xl layer-mid animate-orbit hidden md:block">
+                            <img src="data:image/jpeg;base64,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" class="w-full h-full object-cover grayscale" alt="Lab Context">
+                            <div class="absolute inset-0 bg-[var(--gold-soft)]/20 mix-blend-overlay"></div>
+                            <div class="absolute top-2 left-2 bg-black/50 px-2 py-1 rounded text-[7px] text-white font-bold uppercase">Cam 02</div>
+                        </div>
+
+                        <!-- Data Overlay (Front Layer) -->
+                        <div class="absolute bottom-12 left-12 right-12 layer-front">
+                            <div class="bg-black/80 backdrop-blur-xl p-6 rounded-[30px] border border-white/20 shadow-2xl">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div>
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+                                            <span class="text-[9px] uppercase tracking-[0.2em] text-white/70 font-bold">Analysis Live</span>
+                                        </div>
+                                        <h4 class="text-white serif text-xl">Cellular Morphology</h4>
+                                    </div>
+                                    <div class="waveform">
+                                        <div class="bar" style="animation-delay: 0.1s"></div>
+                                        <div class="bar" style="animation-delay: 0.3s"></div>
+                                        <div class="bar" style="animation-delay: 0.2s"></div>
+                                        <div class="bar" style="animation-delay: 0.5s"></div>
+                                        <div class="bar" style="animation-delay: 0.4s"></div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4 border-t border-white/10 pt-4">
+                                    <div class="text-center">
+                                        <p class="text-[7px] text-white/40 uppercase tracking-widest">Magnification</p>
+                                        <p class="text-sm text-[var(--gold-light)] font-mono">400x</p>
+                                    </div>
+                                    <div class="text-center border-x border-white/10">
+                                        <p class="text-[7px] text-white/40 uppercase tracking-widest">Resolution</p>
+                                        <p class="text-sm text-[var(--gold-light)] font-mono">0.2μm</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="text-[7px] text-white/40 uppercase tracking-widest">Specimen</p>
+                                        <p class="text-sm text-[var(--gold-light)] font-mono">H-24</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                       
+                        <div class="absolute -top-6 -left-6 layer-super-front animate-float">
+                            <div class="w-24 h-24 rounded-full bg-white shadow-2xl flex items-center justify-center p-1 border border-pink-50">
+                                <div class="w-full h-full rounded-full border-2 border-dashed border-[var(--gold-soft)] flex items-center justify-center text-[var(--gold-soft)] flex-col">
+                                    <span class="text-[10px] font-black leading-none italic">ULTRA</span>
+                                    <span class="text-[8px] tracking-tighter uppercase font-bold">HD Sync</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                  
+                    <div class="absolute -bottom-10 left-1/2 -translate-x-1/2 w-[80%] h-10 bg-black/10 blur-3xl rounded-full"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Methodology Section -->
+        <section id="methodology" class="bg-white py-32 border-y border-pink-50 relative overflow-hidden">
+            <div class="max-w-7xl mx-auto px-6 relative z-10">
+                <div class="text-center mb-24">
+                    <h2 class="text-5xl mb-6">How the World Researches as One</h2>
+                    <p class="text-slate-400 max-w-xl mx-auto">Our "Synchronous Discovery" engine ensures that a breakthrough in Tokyo is actionable in New York within seconds.</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8 perspective-scene">
+                    <div class="depth-card bg-white p-10 rounded-[40px] border border-pink-100 hover:border-[var(--gold-soft)] transition-all flex flex-col h-full">
+                        <div class="w-14 h-14 rounded-full bg-[var(--petal-pink)] flex items-center justify-center mb-8">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold-soft)" stroke-width="1.5"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/></svg>
+                        </div>
+                        <h3 class="text-2xl mb-4">Unified Ingestion</h3>
+                        <p class="text-sm text-slate-500 leading-relaxed mb-8 flex-grow">Local labs upload raw bio-signatures. Our system strips away regional formatting, creating a "Universal Medical Language."</p>
+                        <div class="w-full h-48 overflow-hidden rounded-2xl border border-pink-50 shadow-inner group">
+                            <img src="https://www.nutritional-psychology.org/wp-content/uploads/2024/05/unnamed-2-1.png" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Nutritional Psychology Mapping">
+                        </div>
+                    </div>
+
+                    <div class="depth-card bg-white p-10 rounded-[40px] border border-pink-100 hover:border-[var(--gold-soft)] transition-all transform md:translate-y-12 flex flex-col h-full">
+                        <div class="w-14 h-14 rounded-full bg-[var(--petal-pink)] flex items-center justify-center mb-8">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold-soft)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                        </div>
+                        <h3 class="text-2xl mb-4">Neural Consensus</h3>
+                        <p class="text-sm text-slate-500 leading-relaxed mb-8 flex-grow">AI-driven peer review happens across 50+ locations simultaneously. No single lab holds the truth; the network verifies it.</p>
+                        <div class="w-full h-48 overflow-hidden rounded-2xl opacity-60">
+                            <img src="https://images.unsplash.com/photo-1507413245164-6160d8298b31?auto=format&fit=crop&q=80&w=400" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+
+                    <div class="depth-card bg-white p-10 rounded-[40px] border border-pink-100 hover:border-[var(--gold-soft)] transition-all flex flex-col h-full">
+                        <div class="w-14 h-14 rounded-full bg-[var(--petal-pink)] flex items-center justify-center mb-8">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold-soft)" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        </div>
+                        <h3 class="text-2xl mb-4">Open Distribution</h3>
+                        <p class="text-sm text-slate-500 leading-relaxed mb-8 flex-grow">Once reached, protocols are published as open-source assets for every clinic on the platform to download and use.</p>
+                        <div class="w-full h-48 overflow-hidden rounded-2xl opacity-60">
+                            <img src="https://images.unsplash.com/photo-1582719471384-894fbb16e074?auto=format&fit=crop&q=80&w=400" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    
+        <section id="diagnostics" class="max-w-7xl mx-auto px-6 py-40">
+            <div class="text-center mb-16">
+                <span class="text-[var(--gold-soft)] text-xs font-bold tracking-[0.5em] uppercase">Interactive Suite</span>
+                <h2 class="text-5xl mt-4">Precision Online Diagnostics</h2>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8 items-start perspective-scene">
+                <!-- 3D Instrument -->
+                <div class="depth-card bg-white rounded-[50px] p-8 border border-pink-100 shadow-xl overflow-hidden relative">
+                    <div class="relative z-10">
+                        <div class="w-full h-64 rounded-3xl overflow-hidden mb-6 bg-slate-900 flex items-center justify-center layer-mid group">
+                            <img src="https://images.unsplash.com/photo-1551076805-e1869033e561?auto=format&fit=crop&q=80&w=600" class="w-full h-full object-cover opacity-60 mix-blend-screen group-hover:scale-125 transition-transform duration-1000" alt="Bio Sensor">
+                        </div>
+                        <h3 class="serif text-2xl mb-2">Optical Bio-Scanner</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between text-xs"><span>Connectivity</span><span class="text-green-500 font-bold">Active</span></div>
+                            <button class="w-full py-4 gold-gradient text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest mt-4 shadow-lg layer-front">Initialize Scan</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 depth-card glass-luxury rounded-[50px] p-12 border-2 border-white shadow-2xl relative overflow-hidden">
+                    <div class="grid md:grid-cols-2 gap-12 relative z-10">
+                        <div class="bg-white/60 backdrop-blur-md p-8 rounded-[40px] shadow-sm">
+                            <div class="flex items-center gap-4 mb-8">
+                                <div class="w-12 h-12 rounded-full bg-[var(--gold-soft)] flex items-center justify-center text-white">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                                </div>
+                                <h4 class="text-2xl serif">Remote Patient Feed</h4>
+                            </div>
+                            
+                            <div class="space-y-6 mb-8">
+                                <div class="flex justify-between items-end border-b border-pink-100 pb-4">
+                                    <span class="text-[10px] uppercase font-bold text-slate-400">Heart Rate</span>
+                                    <span class="text-3xl font-light italic">72 <small class="text-xs font-normal opacity-50">BPM</small></span>
+                                </div>
+                                <div class="flex justify-between items-end">
+                                    <span class="text-[10px] uppercase font-bold text-slate-400">Diagnostic Status</span>
+                                    <span class="text-2xl font-light italic text-[var(--gold-soft)]">Synched</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-400 leading-relaxed italic">Real-time telehealth kiosk integration active.</p>
+                        </div>
+
+                        <div class="relative min-h-[300px]">
+                            <div class="absolute inset-0 rounded-[40px] overflow-hidden shadow-2xl layer-mid border-4 border-white">
+                                <img src="https://redyref.com/wp-content/uploads/2023/03/Screen-Shot-2023-03-20-at-11.25.52-AM-Edited-e1690573277443-1200x900.png" class="w-full h-full object-cover" alt="Remote Patient Kiosk Interface">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white py-20 border-t border-pink-100 text-center">
+        <div class="max-w-2xl mx-auto px-6">
+            <h3 class="text-3xl mb-8">Ready to sync your lab?</h3>
+            <p class="mt-12 text-[10px] text-slate-300 tracking-[0.4em] uppercase">Built for Humanity • 2025 Collective</p>
+        </div>
+    </footer>
+
+</body>
+</html>

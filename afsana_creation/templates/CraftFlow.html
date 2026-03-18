@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AptiCraft | Task Manager_afsana</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(rgba(66, 61, 61, 0.8), rgba(230, 222, 222, 0.8)), 
+                        url('https://images.unsplash.com/photo-1685839061205-a3ea35b7b804?w=1200&auto=format&fit=crop&q=80');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-item {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #FADA5E;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover::after {
+            width: 100%;
+        }
+
+        .dropdown-menu {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(8px);
+            transition: all 0.2s ease;
+        }
+
+        .group:hover .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-100">
+
+    <!-- Header/Branding Area -->
+    <header class="w-full pt-16 pb-12 mb-20">
+        <div class="max-w-7xl mx-auto px-8 lg:px-12 flex items-center justify-between">
+            <!-- Brand + Home Group -->
+            <div class="flex items-center gap-12">
+                <div class="flex items-center gap-6">
+                    <div class="p-3 bg-white/5 rounded-2xl border border-white/10 shadow-2xl">
+                        <img src="https://cdn3d.iconscout.com/3d/premium/thumb/api-integration-cloud-3d-icon-png-download-12540645.png"
+                            alt="API Logo"
+                            class="w-14 h-14 object-contain grayscale hover:grayscale-0 transition-all duration-500" />
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <h1 class="text-6xl font-bold tracking-tighter text-white">Apti<span
+                                class="text-[#FADA5E]">Craft</span></h1>
+                        <span class="text-3xl animate-pulse">⚡</span>
+                    </div>
+                </div>
+
+                <!-- Centered Home after Brand -->
+                <a href="#"
+                    class="ml-44 nav-item text-4xl font-bold text-[#800020] tracking-[0.01em] uppercase transition-colors hover:text-[#FADA5E]">
+                    HOME
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar - High Contrast Dry Black -->
+    <nav
+        class="sticky top-0 z-50 w-full bg-[#0a0a0a]/90 backdrop-blur-md border-y border-[#E4D96F]/30 shadow-[0_15px_30px_rgba(0,0,0,0.5)]">
+        <div class="max-w-7xl mx-auto h-20 flex items-center justify-between px-8 lg:px-12 relative">
+
+            <!-- Left Side Links -->
+            <div class="flex items-center gap-10">
+                <!-- Tasks Dropdown -->
+                <div class="relative group">
+                    <button
+                        class="flex items-center gap-2 text-3xl font-bold text-[#FADA5E] tracking-[0.2em] transition-colors">
+                        TASKS
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <!-- Dropdown Content -->
+                    <div
+                        class="dropdown-menu absolute top-full left-0 mt-0 w-60 bg-[#0a0a0a] text-2xl border border-white/10 rounded-b-2xl shadow-xl py-4 overflow-hidden">
+                        <a href="#"
+                            class="flex items-center gap-4 px-6 py-3 text-slate-400 hover:bg-[#FADA5E] hover:text-[#0a0a0a] transition-all font-bold uppercase tracking-widest">
+                            Main Tasks
+                        </a>
+                        <a href="#" class="block h-px bg-white/5 mx-4 my-1"></a>
+                        <a href="#"
+                            class="flex items-center gap-4 px-6 py-3 text-slate-400 hover:bg-[#FADA5E] hover:text-[#0a0a0a] transition-all font-bold uppercase tracking-widest">
+                            Sub Tasks
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side Account & Auth -->
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-6 border-r border-white/10 pr-8">
+                    <a id="loginLink" href="#"
+                        class="nav-item text-[18px] font-black text-slate-400 hover:text-[#FADA5E] tracking-[0.2em] uppercase transition-colors">Login</a>
+                    <a id="registerLink" href="#" class="nav-item text-[18px] font-black text-slate-400 hover:text-[#FADA5E] tracking-[0.2em] uppercase transition-colors">Register</a>
+                </div>
+
+                <div class="relative group">
+                    <button
+                        class="flex items-center gap-3 py-2 text-2xs font-bold text-white tracking-[0.2em] uppercase">
+                        Account
+                        <div class="w-8 h-8 rounded-lg bg-[#FADA5E] flex items-center justify-center text-black">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                    </button>
+                    <!-- Account Dropdown -->
+                    <!--Jinja on the nav Admin button-->
+                    <div
+                        class="dropdown-menu absolute top-full right-0 mt-0 w-64 bg-[#0a0a0a] border border-white/10 rounded-b-2xl shadow-2xl py-4">
+                        <div class="px-6 py-3 border-b border-white/5 mb-2">
+                            <p class="text-[18px] font-black text-slate-600 uppercase tracking-widest">Profile</p>
+                           
+                        </div>
+                    <!--admin button with Jinja-->
+                    <div class="px-6 py-3 border-b border-white/5 mb-2">
+                            <button class="w-full py-3 text-2xl font-bold tracking-widest uppercase rounded-xl bg-[#FADA5E] text-black hover:bg-[#e7cd4f] transition-all">
+                                {% if is_admin %}Admin Dashboard{% else %}User Dashboard{% endif %}
+                            </button>
+                        </div>  
+                        <a href="#"
+                            class="block px-6 py-3 text-2xl font-bold text-slate-400 hover:text-white transition-colors tracking-widest uppercase">Settings</a>
+                        <a href="#"
+                            class="block px-6 py-3 text-2xl font-bold text-red-500 hover:bg-red-500/10 transition-colors tracking-widest uppercase">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!--Jinja template msg from server after db saved credentials-->
+    {% if msg %}
+       <div class="mt-16 text-[#E3F988] text-sm py-4 text-center font-bold tracking-widest drop-shadow-[0_2px_6px_#E4D96F]">
+            {{ msg }}
+        </div>
+    {% endif %}
+
+  <!--Register section hidden -->
+    <div id="register" class="{% if show_register %}block{% else %}hidden{% endif %} min-h-screen flex items-center justify-center py-20 px-2">
+             <div class="w-full max-w-lg bg-[#242124]/90 backdrop-blur-lg border border-[#FADA5E]/30 rounded-3xl shadow-[0_0_20px_#EFDECD] p-10">
+            <div class="text-center mb-10">
+                <h2 class="text-5xl font-bold tracking-tight text-[#FADA5E]">Create Account</h2>
+                <p class="text-slate-400 mt-3 text-lg">Join AptiCraft Task Manager</p>
+            </div>
+            <form action="/signin" method="post" class="space-y-6">
+                <div class="border border-[#555D50] rounded-xl">
+                    <label class="block text-lg font-bold text-slate-300 mb-2 mt-2 ml-4">Username</label>
+                    <input type="text" name="username" placeholder="Enter username"
+                        class="w-full px-4 py-3 bg-[#1B1B1B] border border-white/10 rounded-xl text-[#EFDECD] focus:outline-none focus:ring-2 focus:ring-[#FADA5E]/60 transition-all" />
+                </div>
+                <div class="border border-[#555D50] rounded-xl">
+                    <label class="block text-lg font-bold text-slate-300 mb-2 mt-2 ml-4">Email</label>
+                    <input type="email" name="email" placeholder="Enter email"
+                        class="w-full px-4 py-3 bg-[#1B1B1B] border border-white/10 rounded-xl text-[#EFDECD] focus:outline-none focus:ring-2 focus:ring-[#FADA5E]/60 transition-all" />
+                </div>
+                <div class="border border-[#555D50] rounded-xl">
+                    <label class="block text-lg font-bold text-slate-300 mb-2 mt-2 ml-4">Password</label>
+                    <input type="password" name="password" placeholder="Create password"
+                        class="w-full px-4 py-3 bg-[#1B1B1B] border border-white/10 rounded-xl text-[#EFDECD] focus:outline-none focus:ring-2 focus:ring-[#FADA5E]/60 transition-all" />
+                </div>
+                <button type="submit"
+                    class="w-full py-3 text-lg font-bold tracking-widest uppercase rounded-xl bg-[#FADA5E] text-black hover:bg-[#e7cd4f] transition-all">
+                    Register
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!--hidden login section -->
+    <div id="login" class="{% if msg and not username and not show_register %}block{% else %}hidden{% endif %} min-h-screen flex items-center justify-center py-20 px-4">
+             <div class="w-full max-w-lg bg-[#242124]/90 backdrop-blur-lg border border-[#FADA5E]/30 rounded-3xl shadow-[0_0_20px_#EFDECD] p-10">
+            <div class="text-center mb-10">
+                <h2 class="text-5xl font-bold tracking-tight text-[#FADA5E]">Welcome Back</h2>
+                <p class="text-slate-400 mt-3 text-lg">Login to your AptiCraft Account</p>
+            </div>
+            <form action="/craft-login" method="post" class="space-y-6">
+                <div class="border border-[#555D50] rounded-xl">
+                    <label class="block text-lg font-bold text-slate-300 mb-2 mt-2 ml-4">Username</label>
+                    <input type="text" name="username" placeholder="Enter username" class="w-full px-4 py-3 bg-[#141414] border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FADA5E]/60 transition-all" />
+                </div>
+                <div class="border border-[#555D50] rounded-xl">
+                    <label class="block text-lg font-bold text-slate-300 mb-2 mt-2 ml-4">Password</label>
+                    <input type="password" name="password" placeholder="Enter password" class="w-full px-4 py-3 bg-[#141414] border border-white/10 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FADA5E]/60 transition-all" />
+                </div>
+                <button type="submit"
+                    class="w-full py-3 text-lg font-bold tracking-widest uppercase rounded-xl bg-[#FADA5E] text-black hover:bg-[#e7cd4f] transition-all">
+                    Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!--Create a section for use dashboard or user profile where user see their name and tasks that comes after login.-->
+  <!-- Section with no background/blur, 1px light golden borders, and 3D interactions -->
+<section id="dashboard" class="{% if username %}block{% else %}hidden{% endif %} min-h-screen py-20 px-4 bg-transparent">
+    <div class="max-w-7xl mx-auto border border-[#FADA5E]/20 rounded-[2.5rem] p-12 relative overflow-hidden">
+        
+        <!-- Subtle Animated Corner Indicator -->
+        <div class="absolute top-0 right-0 w-32 h-32 border-t border-r border-[#FADA5E]/40 rounded-tr-[2.5rem] pointer-events-none"></div>
+
+        <!-- Header Section -->
+        <div class="mb-14 relative z-10">
+            <h2 class="text-6xl font-extrabold tracking-tighter text-white mb-4">
+                Greetings, <span class="text-[#FADA5E]">{{ username }}</span>
+            </h2>
+            <p class="text-slate-400 text-xl font-medium tracking-wide">Strategic Task Overview</p>
+        </div>
+
+        <!-- Task Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            
+            <!-- Example Task Card -->
+            <div class="group perspective-1000">
+                <div class="relative border border-[#FADA5E]/20 rounded-3xl p-8 h-full transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] transform-gpu group-hover:rotate-y-12 group-hover:-translate-y-4 group-hover:border-[#FADA5E]/60 group-hover:shadow-[20px_20px_50px_rgba(0,0,0,0.3)]">
+                    
+                    <!-- Floating Indicator -->
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="text-2xl font-bold text-white tracking-tight group-hover:text-[#FADA5E] transition-colors">Main Task 1</h3>
+                        <div class="px-3 py-1 border border-[#FADA5E]/30 rounded-full text-[10px] text-[#FADA5E] uppercase tracking-widest font-bold">
+                            Active
+                        </div>
+                    </div>
+                    
+                    <p class="text-slate-400 mb-10 leading-relaxed font-light">
+                        This is a brief description of the main task. It gives an overview of what needs to be done.
+                    </p>
+
+                    <!-- Sub Tasks Section (Divided by light border) -->
+                    <div class="pt-6 border-t border-[#FADA5E]/10 group-hover:border-[#FADA5E]/30 transition-colors">
+                        <h4 class="text-xs font-black uppercase tracking-[0.25em] text-[#FADA5E] mb-6">
+                            Sub-Project Milestones
+                        </h4>
+                        <ul class="space-y-5">
+                            <li class="flex items-center gap-4 group/item">
+                                <div class="w-1.5 h-1.5 border border-[#FADA5E] rotate-45 group-hover/item:bg-[#FADA5E] transition-all duration-300"></div>
+                                <span class="text-sm text-slate-400 group-hover/item:text-white transition-colors">
+                                    Sub Task 1: Primary research and alignment.
+                                </span>
+                            </li>
+                            <li class="flex items-center gap-4 group/item">
+                                <div class="w-1.5 h-1.5 border border-[#FADA5E] rotate-45 group-hover/item:bg-[#FADA5E] transition-all duration-300"></div>
+                                <span class="text-sm text-slate-400 group-hover/item:text-white transition-colors">
+                                    Sub Task 2: Structural framework development.
+                                </span>
+                            </li>
+                            <li class="flex items-center gap-4 group/item">
+                                <div class="w-1.5 h-1.5 border border-[#FADA5E] rotate-45 group-hover/item:bg-[#FADA5E] transition-all duration-300"></div>
+                                <span class="text-sm text-slate-400 group-hover/item:text-white transition-colors">
+                                    Sub Task 3: Final validation and deployment.
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+<!--The admin section shows all registered users from the database (username, email, level) without sensitive data like passwords. 
+It allows the admin to assign tasks, write notes, and monitor which tasks belong to which user. 
+The admin can also see overall activity and manage user progress from the same dashboard.-->
+<section id="admin-dashboard" class="{% if username and is_admin %}block{% else %}hidden{% endif %} min-h-screen py-20 px-4 bg-transparent">
+    <div class="max-w-7xl mx-auto border border-[#FADA5E]/20 rounded-[2.5rem] p-12 relative overflow-hidden">
+        <h2 class="text-6xl font-extrabold tracking-tighter text-white mb-4">
+            Admin Dashboard
+        </h2>
+        <p class="text-slate-400 text-xl font-medium tracking-wide mb-10">User Management & Task Oversight</p>
+
+        <!-- User Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse border border-[#FADA5E]/20 rounded-2xl">
+                <thead>
+                    <tr class="bg-[#0a0a0a]/90">
+                        <th class="border border-[#FADA5E]/30 px-6 py-3 text-left text-sm font-bold text-[#FADA5E] uppercase tracking-widest">Username</th>
+                        <th class="border border-[#FADA5E]/30 px-6 py-3 text-left text-sm font-bold text-[#FADA5E] uppercase tracking-widest">Email</th>
+                        <th class="border border-[#FADA5E]/30 px-6 py-3 text-left text-sm font-bold text-[#FADA5E] uppercase tracking-widest">Role</th>
+                        <th class="border border-[#FADA5E]/30 px-6 py-3 text-left text-sm font-bold text-[#FADA5E] uppercase tracking-widest">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr class="bg-[#141414]/90 hover:bg-[#1B1B1B]/90 transition-colors">
+                        <td class="border border-[#FADA5E]/30 px-6 py-4 text-sm font-medium text-slate-400">{{ user.username }}</td>
+                        <td class="border border-[#FADA5E]/30 px-6 py-4 text-sm font-medium text-slate-400">{{ user.email }}</td>
+                        <td class="border border-[#FADA5E]/30 px-6 py-4 text-sm font-medium text-slate-400">{{ user.role }}</td>
+                        <td class="border border-[#FADA5E]/30 px-6 py-4 text-sm font-medium">
+                            <button class="px-4 py-2 bg-[#FADA5E] rounded-lg text-black font-bold hover:bg-[#e7cd4f] transition-all">Manage Tasks</button>
+                            <button class="px-4 py-2 bg-red-500 rounded-lg text-white font-bold hover:bg-red-600 transition-all">Remove User</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+  <script>
+      document.addEventListener('DOMContentLoaded', function () {
+            const registerLink = document.querySelector('#registerLink');
+            const registerSection = document.querySelector('#register');
+            const loginSection = document.querySelector('#login');
+
+            registerLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                loginSection.classList.add('hidden');
+                registerSection.classList.toggle('hidden');
+            });
+
+            const loginLink = document.querySelector('#loginLink');
+            loginLink.addEventListener('click', function (e) {
+                e.preventDefault();
+                registerSection.classList.add('hidden');
+                loginSection.classList.toggle('hidden');
+            });
+        });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1760 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Luxury Coffee Visualization_afsana</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Added Requested Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/geometries/TextGeometry.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Space+Grotesk:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* START: Existing Styles (MUST BE KEPT) */
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            background: #e5d9c4;
+            /* Lighter espresso-tinted background */
+            font-family: 'Space Grotesk', sans-serif;
+            overflow-y: auto
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            /* match 360 container height */
+            border: 0;
+            display: block;
+            z-index: 1;
+            position: relative;
+        }
+
+        #main-footer {
+            font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            letter-spacing: 0.04em;
+            white-space: normal;
+        }
+
+        #webgl-container {
+            position: absolute;
+            /* FIX: overlay, do NOT push iframe */
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            background: transparent;
+            pointer-events: auto;
+            transition: pointer-events 0.1s;
+        }
+
+        #webgl-container.pass-through {
+            pointer-events: none;
+        }
+
+        #info {
+            position: absolute;
+            top: 4rem;
+            right: 4rem;
+            z-index: 10;
+            display: none;
+        }
+
+        /* GLB description panel – transparent, tall, coffee tone */
+
+        #description {
+            position: absolute;
+            top: 10rem;
+            right: 2rem;
+            width: 26rem;
+            max-width: calc(100vw - 7rem);
+            min-height: 4rem;
+            padding: 1.5rem 2rem;
+
+            /* Clean Transparent Background */
+            background: transparent;
+
+            /* High-Definition Typography */
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 500;
+            line-height: 1;
+            letter-spacing: -0.01em;
+
+            /* Sharp Silver Visualization */
+            color: #8f0505;
+            text-shadow: 1px 1px 0px #1b1b18, 0px 0px 8px rgba(242, 243, 195, 0.5);
+            /* Rich Espresso Black */
+
+            /* The "Perfect Display" Logic: 
+       Ensures text is readable even over bright spots in the 360 panorama */
+
+
+            /* Professional Decorative Border (Left side only) */
+            border-left: 5px solid #5a1c0d;
+
+            z-index: 7;
+            pointer-events: none;
+            display: none;
+            overflow: hidden;
+
+            /* Smooth entrance */
+            transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+
+        /* Light parchment sheet behind the text */
+        #description::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(248, 243, 243, 0.42), rgba(250, 247, 240, 0.28));
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 0.6rem;
+            box-shadow: 0 10px 24px rgba(219, 212, 211, 0.18);
+            z-index: -1;
+        }
+
+        @keyframes sheetIn {
+            0% {
+                opacity: 0;
+                transform: translateY(10px) scale(0.98);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes sheetGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 10px 24px rgba(44, 24, 16, 0.18);
+            }
+
+            50% {
+                box-shadow: 0 14px 30px rgba(44, 24, 16, 0.28);
+            }
+        }
+
+        .sheet-in {
+            animation: sheetIn .45s ease-out both, sheetGlow 2.4s ease-in-out infinite;
+        }
+
+        /* Roll like ancient scroll */
+        @keyframes sheetRoll {
+            0% {
+                clip-path: inset(0 0 0 0);
+                transform: scaleX(1);
+                opacity: 1;
+            }
+
+            100% {
+                clip-path: inset(0 0 92% 0);
+                transform: scaleX(0.15);
+                opacity: .95;
+            }
+        }
+
+        .sheet-roll {
+            animation: sheetRoll .6s ease-in forwards;
+        }
+
+        /* Throw the rolled scroll */
+        @keyframes sheetThrow {
+            0% {
+                transform: translateY(0) scaleX(.15) rotateZ(0deg);
+                opacity: .95;
+            }
+
+            100% {
+                transform: translateY(-160px) scaleX(.15) rotateZ(-18deg);
+                opacity: 0;
+            }
+        }
+
+        .sheet-throw {
+            animation: sheetThrow .5s ease-out forwards;
+        }
+
+        .full-bleed-360 {
+            width: 100vw;
+            height: 150vh;
+            /* FIX: give 360 section height so WebGL + text render */
+            position: relative;
+            /* anchor WebGL + description */
+            margin-left: calc(50% - 50vw);
+            margin-right: calc(50% - 50vw);
+        }
+
+        /* Luxury Presentation Styles */
+        .premium-header {
+            font-family: 'Playfair Display', serif;
+            background: linear-gradient(to right, #141312 0%, #b17505 50%, #111314 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            /* warm gold shadow */
+            text-shadow: 0 6px 18px rgba(240, 230, 176, 0.55);
+            transition: text-shadow 0.35s ease, transform 0.35s ease;
+        }
+
+
+        .premium-header:hover {
+            text-shadow: 0 10px 28px rgba(48, 11, 2, 0.85);
+            transform: translateY(-2px);
+        }
+
+        .img-zoom-container {
+            overflow: hidden;
+            border: 1px solid rgba(197, 160, 89, 0.3);
+            box-shadow: 0 20px 40px rgba(44, 24, 16, 0.1);
+            background: #fff;
+        }
+
+        .img-zoom-container img {
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .img-zoom-container:hover img {
+            transform: scale(1.1);
+        }
+
+        .silver-text {
+            color: #8e9091;
+        }
+
+        .gold-border {
+            border-color: #c5a059;
+        }
+
+        /* Human touch: Cinematic Flash Hint Styles */
+        #inspect-hint {
+            position: absolute;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #e29507;
+            font-weight: bold;
+            font-size: 0.85rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            z-index: 15;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Human touch: Floating Emoji Style */
+        #emoji-anchor {
+            position: absolute;
+            pointer-events: none;
+            z-index: 10;
+            font-size: 1.5rem;
+            transform: translate(-50%, -50%);
+            filter: drop-shadow(0 0 5px rgba(53, 51, 47, 0.5));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            word-spacing: -0.1em;
+        }
+
+        /* === 360 TOP MARQUEE (RTL, fixed, no background) === */
+        #ux-360-marquee {
+            position: absolute;
+            /* FIX: overlay, not layout */
+            top: 2rem;
+            left: 0;
+            width: 100%;
+            z-index: 6;
+            pointer-events: none;
+            overflow: hidden;
+            white-space: nowrap;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+            font-size: 1.9rem;
+            font-style: oblique;
+
+            /* MATCHING PINK/GOLD: High-visibility gold with pink depth */
+            color: #FFBF00;
+            text-shadow:
+                1px 1px 0px #cad3d3,
+                /* Deep Pink Outline for visibility */
+                -1px -1px 0px hsla(11, 7%, 68%, 0.87),
+                1px 1px 5px rgba(250, 249, 245, 0.8);
+            /* Golden Glow */
+        }
+
+        #ux-360-marquee span {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marqueeRTL 35s linear infinite;
+        }
+
+        @keyframes marqueeRTL {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* NAV ITEM STYLE */
+        .navItem {
+            font-size: 20px;
+            letter-spacing: .25em;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #800000;
+            padding: 0;
+            margin: 0;
+            border-radius: 0;
+            background: none;
+            transition: .2s;
+        }
+
+        .navItem:hover {
+            color: #DAA520;
+            box-shadow: 0 4px 12px rgba(218, 165, 32, 0.6);
+        }
+
+
+
+
+        /* #nav-dust {
+            z-index: -1 !important;
+            } */
+
+        /* #gallery-nav {
+            background: url("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSrjARSONn_k8-DLm-apLfPTZhapMNW_mMTGg&s");
+            background-size: cover;
+
+        } */
+
+        /*#gap {
+        background: url("https://media.istockphoto.com/id/1353583431/vector/vector-illustration-of-a-very-dark-brown-coke-coloured-textured-effect-empty-grunge-textured.jpg?s=612x612&w=0&k=20&c=SPhDXKpApR8sLAYB4ytOTFzsCddyMYpb3OE0rqFUu_E=") repeat;
+        background-size: cover;
+    }*/
+    
+    </style>
+</head>
+
+<body>
+    <!-- <div class="w-full h-4 bg-gradient-to-b from-[#3D0C02]/80 via-[#3D0C02] to-transparent shadow-[#3D0C02]"></div> -->
+    <!-- START: NAVIGATION -->
+    <nav id="gallery-nav" class="top-0 left-0 w-full z-20  bg-transparent relative">
+        <!-- dust layer -->
+        <div id="nav-dust" class="absolute inset-0 pointer-events-none z-0"></div>
+        <!-- NAV BAR -->
+        <div class="flex items-center justify-center max-w-6xl mx-auto relative z-60 ">
+            <div
+                class="flex items-center gap-8 px-6 rounded-full bg-white/10 backdrop-blur-md border-b-8 border-[#592720] shadow-2xl shadow-[#DDD06A]">
+                <!-- SITE NAME (separate style) -->
+                <div class="flex flex-col leading-tight mr-6  relative ">
+                    <span id="apti"
+                        class="mb-8 mt-6 text-4xl font-bold tracking-[0.001em] text-[#592720] drop-shadow-[0_2px_8px_rgba(8,4,0,0.6)] hover:text-[#C19A6B] transition-colors">
+                        <!-- AptiCraft -->
+                    </span>
+                </div>
+                <!-- divider -->
+                <div class="h-8 w-px bg-white/20"></div>
+                <!-- NAV ITEMS -->
+                <div class="flex items-center gap-6 mt-8  mb-4 text-xl font-semibold  ">
+                    <a href="#" class="navItem">Home</a>
+                    <a href="#"
+                        onclick="closeExtension(); document.querySelector('#webgl-container')?.classList.remove('hidden'); document.querySelector('.full-bleed-360 iframe')?.classList.remove('hidden'); return false;"
+                        class="navItem">
+                        Gallery
+                    </a>
+                    <a href="#" onclick="openExtension(); return false;" class="navItem">
+                        Experience
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- <div id="gap" class="w-full -m-1 h-14 "></div> -->
+    <main id="content" class="relative overflow-x-hidden ">
+        <div class="full-bleed-360 relative">
+            <!-- 360 MARQUEE (BOUND TO 360 ONLY) -->
+            <div id="ux-360-marquee">
+                <span>
+                    Explore products in immersive 360° spaces with interactive 3D (GLB) models — higher trust, deeper
+                    engagement, stronger business impact.
+                </span>
+            </div>
+            <!-- WebGL + GLB overlay (BOUND TO 360) -->
+            <div id="webgl-container">
+                <!-- GLB description panel (right side) -->
+                <div id="description" class="text-sm leading-relaxed"></div>
+
+            </div>
+
+            <iframe allowfullscreen allow="accelerometer; magnetometer; gyroscope; xr-spatial-tracking"
+                src="https://momento360.com/e/u/8f5e3efc7fd7400e9bdb598042362d42?utm_campaign=embed&utm_source=other&heading=-3.88&pitch=18.12&field-of-view=100&size=medium&display-plan=true">
+            </iframe>
+
+            <!-- extension overlay same 360 spot -->
+            <section id="extension" class="absolute inset-0 hidden z-30">
+                <div class="w-full h-full">
+                    <div id="pano" class="w-full h-full"></div>
+                </div>
+
+                <!-- JSON DATA UI OVERLAY -->
+                <section id="data" class="absolute inset-0 z-50 flex items-center justify-center pointer-events-auto">
+                    <div class="flex flex-col items-center text-center max-w-xl">
+                        <img id="sectionImage"
+                            class="w-72 h-72 object-contain mb-6 shadow-2xl rounded-lg shadow-[#DDD06A]" alt="image" />
+                        <h3 id="title" class="text-4xl font-semibold tracking-wide text-[#3D0C02]"></h3>
+                        <p id="sectionText" class="mt-4 text-lg leading-relaxed text-[#F5F5DC]"></p>
+                    </div>
+                </section>
+            </section>
+        </div>
+
+        <!-- Section after 360 -->
+        <section id="visualize"
+            class="relative min-h-[300vh] flex flex-col items-center justify-start pt-24  text-center bg-[#FDFCFB]">
+            <!-- Transition Gradient -->
+            <div
+                class="absolute left-0 right-0 -top-6 h-32 bg-gradient-to-b from-[#1a1a1a] via-[#2c1810]/40 to-[#592720]">
+            </div>
+
+            <div class="relative z-10 max-w-7xl mx-auto px-6">
+                <span
+                    class="text-[#CBA135] font-bold tracking-[0.5em] text-xl hover:text-[#3D0C02] uppercase mb-4 mt-6 block">Crafting
+                    Perception</span>
+                <h2 class="text-5xl md:text-6xl font-bold premium-header mb-10 shadow-2xl shadow-[#DAA520] ">Visualize
+                    Your Products</h2>
+                <p
+                    class="mb-44 mt-20 max-w-3xl mx-auto text-2xl md:text-2xl text-[#3D0C02] font-normal italic leading-relaxed mb-20 opacity-90 ">
+                    Modern visualization is the alchemy of marketing. We transform raw utility into sensory truth,
+                    focusing on the intricate dance between high-performance materials and the soul of the user.
+                    <span class="inline-flex gap-4 mt-8">
+                        <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffees4.png"
+                            class="bg-[#3D0C02]/40 rounded-xl w-80 transition-transform duration-300 hover:scale-110 shadow-2xl shadow-[#3D0C02]" />
+                        <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee_jug.png"
+                            class="bg-[#3D0C02]/40 rounded-xl w-80 transition-transform duration-300 hover:scale-110 shadow-2xl shadow-[#3D0C02]" />
+                        <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee_cup.png"
+                            class="bg-[#3D0C02]/40 rounded-xl w-80 transition-transform duration-300 hover:scale-110 shadow-2xl shadow-[#3D0C02]" />
+                    </span>
+                </p>
+
+
+                <!-- Row 1: The Ingredients (Coffee 1) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center text-left mb-32">
+                    <div class="img-zoom-container rounded-[2.5rem] p-4 bg-[#EFDECD]/10">
+                        <div class="overflow-hidden rounded-[2rem] aspect-[4/3] bg-[#FEFEFA]">
+                            <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee1.png"
+                                class="w-full h-full object-cover " alt="Coffee Ingredients">
+                        </div>
+                    </div>
+                    <div class="space-y-8 p-8">
+                        <div class="w-20 h-1 bg-[#c5a059]"></div>
+                        <h3
+                            class="text-4xl font-bold text-[#592720] leading-tight hover:text-[#CBA135] transition-colors">
+                            Primordial Bean<br>
+                            <span class="inline-flex items-center gap-2 text-[#3D0C02] text-2xl font-medium italic">
+                                Pure Essence <img
+                                    src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffees3.png"
+                                    class="bg-[#C19A6B]/40 rounded-3xl ml-4 w-20 h-20 transition-transform duration-300 hover:scale-110 shadow-2xl shadow-[#FFD800]" />
+                            </span>
+
+                        </h3>
+                        <p class="text-[#2c1810] text-2xl leading-relaxed font-medium">
+                            It all starts with the bean. Our high-definition visualization captures the raw, velvet
+                            purity of the organic origins. By revealing the precise processing methods, we preserve the
+                            essential oils that define the AptiCraft signature.
+                            <span class="block ml-64">
+                                <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffees2.png"
+                                    class="bg-[#C19A6B]/40 rounded-xl w-80 transition-transform duration-300 hover:scale-110 shadow-2xl shadow-[#FFD800]" />
+                            </span>
+                        </p>
+
+                    </div>
+                </div>
+
+                <!-- Row 2: The Materials (Coffee 2, 3, 4) -->
+                <div class="mb-40">
+                    <div class="flex items-center justify-between mb-16 border-b border-[#c5a059]/20 pb-8">
+                        <h3 class="text-3xl font-bold text-[#592720] shadow-lg shadow-[#FFD800] hover:text-[#CBA135] transition-colors">Material Excellence 
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-10 text-left">
+                        <!-- Item 2 -->
+                        <div class="group">
+                            <div class="img-zoom-container rounded-3xl mb-8 p-3 bg-[#EFDECD]/20">
+                                <div class="overflow-hidden rounded-2xl h-72">
+                                    <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee2.png"
+                                        class="w-full h-full object-cover" alt="Cup Variety 1">
+                                </div>
+                            </div>
+                            <h4 class="text-xl font-bold text-[#2c1810] mb-3 flex items-center gap-3">
+                                <span class="text-sm font-light text-[#c5a059]">01</span> Thermal Stability
+                            </h4>
+                            <p class="text-sm text-[#8e9091] leading-loose">Lead-free borosilicate glass engineered to
+                                master extreme thermal shifts while retaining crystalline brilliance.</p>
+                        </div>
+                        <!-- Item 3 -->
+                        <div class="group">
+                            <div class="img-zoom-container rounded-3xl mb-8 p-3 bg-[#EFDECD]/20">
+                                <div class="overflow-hidden rounded-2xl h-72">
+                                    <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee3.png"
+                                        class="w-full h-full object-cover" alt="Cup Variety 2">
+                                </div>
+                            </div>
+                            <h4 class="text-xl font-bold text-[#2c1810] mb-3 flex items-center gap-3">
+                                <span class="text-sm font-light text-[#c5a059]">02</span> Organic Glazes
+                            </h4>
+                            <p class="text-sm text-[#8e9091] leading-loose">Artisanal finishes using natural earth
+                                minerals, providing a haptic experience that never chips or leaches toxins.</p>
+                        </div>
+                        <!-- Item 4 -->
+                        <div class="group">
+                            <div class="img-zoom-container rounded-3xl mb-4 p-3 bg-[#EFDECD]/20">
+                                <div class="overflow-hidden rounded-2xl h-72">
+                                    <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee10.jpg"
+                                        class="w-full h-full object-cover" alt="Cup Variety 3">
+                                </div>
+                            </div>
+                            <h4 class="text-xl font-bold text-[#2c1810] mb-3 flex items-center gap-3">
+                                <span class="text-sm font-light text-[#c5a059]">03</span> Ergonomic Balance
+                            </h4>
+                            <p class="text-sm text-[#8e9091] leading-loose">Calculated weight distribution and handle
+                                architecture designed for a seamless, balanced human connection.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-center">
+                    <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffees.png"
+                        class="bg-[#C19A6B]/40 rounded-3xl w-600 h-600 flex-shrink-0 transition-transform duration-300 hover:scale-110 shadow-2xl shadow-[#FFD800]" />
+                </div>
+                <!-- Environmental & Harmful Use Section (Using 5, 6, 7) -->
+                <div
+                    class="mt-32 py-24 px-12 bg-white rounded-[4rem] shadow-2xl shadow-[#2c1810]/5 border border-[#c5a059]/10">
+                    <h2 class="text-4xl md:text-5xl font-bold premium-header mb-16 text-center italic">The Bio-Ethical
+                        Mandate</h2>
+                    <div class="grid md:grid-cols-3 gap-12 text-left">
+                        <div class="space-y-6">
+                            <div class="img-zoom-container rounded-2xl">
+                                <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee5.png"
+                                    class="w-full h-64 object-cover" alt="Env Impact">
+                            </div>
+                            <h4 class="text-lg font-bold text-[#2c1810] border-l-2 border-[#c5a059] pl-4">Eco Protection
+                            </h4>
+                            <p class="text-sm text-[#8e9091] leading-relaxed italic font-medium">100% biodegradable or
+                                infinitely recyclable, eliminating the synthetic BPA footprints common in industrial
+                                production.</p>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="img-zoom-container rounded-2xl ring-2 ring-red-100 ring-offset-4">
+                                <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee6.png"
+                                    class="w-full h-64 object-cover" alt="Health Risk">
+                            </div>
+                            <h4 class="text-lg font-bold text-red-800 border-l-2 border-red-500 pl-4">Biological Hazard
+                            </h4>
+                            <p class="text-sm text-red-900/70 leading-relaxed font-bold">Standard cups hide toxic
+                                plastic linings. When heated, they release microscopic polymers into the body and the
+                                earth.</p>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="img-zoom-container rounded-2xl">
+                                <img src="https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee7.png"
+                                    class="w-full h-64 object-cover" alt="The Difference">
+                            </div>
+                            <h4 class="text-lg font-bold text-[#2c1810] border-l-2 border-[#c5a059] pl-4">The Pure
+                                Choice</h4>
+                            <p class="text-sm text-[#8e9091] leading-relaxed italic font-medium">Material choice is a
+                                silent revolution—protecting your physiology while nurturing the global ecosystem.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Business Ethics Section - NEW PROFESSIONAL DESIGN -->
+                <div
+                    class="mt-10 p-6 md:p-24 rounded-[3rem] bg-[#F5F1E8] border border-[#D4AF37]/20 relative overflow-hidden">
+                    <!-- Subtle Golden Glow -->
+                    <div class="absolute -top-6 -left-24 w-64 h-44 bg-[#D4AF37] opacity-10 blur-[100px]"></div>
+
+                    <div class="max-w-4xl mx-auto text-center space-y-8">
+                        <div class="inline-block px-2 py-1 border border-[#D4AF37] rounded-full">
+                            <span class="text-[#8B4513] text-xs font-bold uppercase tracking-[0.1em]">Corporate
+                                Philosophy</span>
+                        </div>
+
+                        <h3 class="text-4xl md:text-5xl font-bold text-[#79443B] font-serif hover:text-[#CBA135] transition-colors" 
+                            style="-webkit-text-stroke:1px #3B3C36;">AptiCraft <span
+                                class="text-[#D4AF37] italic hover:text-[#79443B] transition-colors">Governance</span></h3>
+
+                        <div class="h-[1px] w-32 bg-[#D4AF37]/40 mx-auto"></div>
+
+                        <p class="text-xl md:text-2xl text-[#5D4037] font-medium leading-relaxed italic">
+                            "Integrity is the final ingredient in every roast. At AptiCraft, our business policy is
+                            built upon a foundation of absolute transparency and radical accountability. We do not just
+                            brew coffee; we cultivate a legacy of ethical stewardship."
+                        </p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16 pt-12 border-t border-[#D4AF37]/20">
+                            <div>
+                                <h5 class="text-[#2c1810] font-bold text-sm uppercase tracking-widest mb-2">Sustainable
+                                    Profit</h5>
+                                <p class="text-[#8e9091] text-xs leading-relaxed">Prioritizing long-term ecological
+                                    health over short-term quarterly gains.</p>
+                            </div>
+                            <div>
+                                <h5 class="text-[#2c1810] font-bold text-sm uppercase tracking-widest mb-2">Direct Trade
+                                </h5>
+                                <p class="text-[#8e9091] text-xs leading-relaxed">Ensuring every farmer receives a
+                                    premium far exceeding fair-trade standards.</p>
+                            </div>
+                            <div>
+                                <h5 class="text-[#2c1810] font-bold text-sm uppercase tracking-widest mb-2">Zero-Waste
+                                    Logic</h5>
+                                <p class="text-[#8e9091] text-xs leading-relaxed">A strictly circular supply chain from
+                                    plantation to your final sip.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!--Extenstion moved into 360 container -->
+
+        <script>
+            // ---- MARZIPANO LOADER (FIXED) ----
+            function loadScript(src) { return new Promise((r, j) => { const s = document.createElement('script'); s.src = src; s.onload = r; s.onerror = j; document.head.appendChild(s); }); }
+            async function ensureMarzipano() { if (window.Marzipano) return; await loadScript('https://unpkg.com/marzipano@0.10.2/dist/marzipano.js'); }
+
+            async function initPano() {
+                await ensureMarzipano();
+                const M = window.Marzipano;
+                const panoEl = document.getElementById('pano');
+                const viewer = new M.Viewer(panoEl);
+
+                const IMAGES = [
+                    'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee360.jpeg',
+                    'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffeeStore.jpeg',
+                    'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr_cropped_processed_by_imagy.jpg',
+                    'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr2_cropped_processed_by_imagy.jpg',
+                    'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr3_cropped_processed_by_imagy.jpg',
+                    'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr4_cropped_processed_by_imagy.jpg',
+                    'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/vr5_cropped_processed_by_imagy.jpg'
+                ];
+
+                const scenes = IMAGES.map(src => {
+                    const source = M.ImageUrlSource.fromString(src);
+                    const geometry = new M.EquirectGeometry([{ width: 4000 }]);
+                    const view = new M.RectilinearView(null, M.RectilinearView.limit.traditional(2048, 120 * Math.PI / 180));
+                    return viewer.createScene({ source, geometry, view });
+                });
+
+                let i = 0, rot = null;
+                function show() {
+                    scenes[i].switchTo();
+                    const view = scenes[i].view();
+                    clearInterval(rot);
+                    let yaw = 0;
+                    rot = setInterval(() => { yaw += 0.0015; view.setYaw(yaw); }, 16);
+                    setTimeout(() => { clearInterval(rot); i = (i + 1) % scenes.length; show(); }, 6000);
+                }
+
+                // zoom with wheel
+                panoEl.addEventListener('wheel', e => {
+                    const view = scenes[i].view();
+                    const fov = view.fov();
+                    view.setFov(fov * (e.deltaY > 0 ? 1.05 : 0.95));
+                });
+
+                panoEl.onmouseenter = () => clearInterval(rot);
+                panoEl.onmouseleave = () => show();
+                show();
+            }
+
+            // ---- EXTENSION CONTROL (ONLY EXTENSION, NO OTHER SECTIONS) ----
+            let panoStarted = false;
+            // open extension view and pause gallery Three.js
+            function openExtension() {
+                window.is3DActive = false;
+                document.querySelector('#webgl-container')?.classList.add('hidden');
+                document.querySelector('.full-bleed-360 iframe')?.classList.add('hidden');
+
+                const ext = document.getElementById('extension');
+                if (!ext) return;
+                ext.classList.remove('hidden');
+
+                if (!panoStarted) { panoStarted = true; initPano(); }
+
+                // load JSON data + image for extension UI
+                fetch('/ai_data')
+                    .then(r => r.json())
+                    .then(d => {
+                        console.log(d); // debug full JSON
+
+                        // choose section based on currentModelIndex (rotates properly)
+                        const sections = [
+                            d.brand,
+                            d.product?.coffee_story,
+                            d.product?.taste_and_health,
+                            d.product?.cups_and_jugs,
+                            d.product?.environment_and_sustainability,
+                            d.product?.authentication_and_quality
+                        ];
+
+                        const item = sections[currentModelIndex % sections.length] || {};
+
+                        const img = document.getElementById('sectionImage');
+                        img.src = item.images?.[0] || '';
+                        img.style.display = item.images ? 'block' : 'none';
+
+                        document.getElementById('title').textContent = item.title || '';
+                        document.getElementById('sectionText').textContent = Array.isArray(item.text)
+                            ? item.text.join(' ')
+                            : (item.text || item.description || '');
+
+                        console.log("section images", item.images);
+                    })
+                    .catch(() => console.warn('ai_data not loading'));
+            }
+
+
+            // Optional: close/hide without touching anything else
+            function closeExtension() {
+                const ext = document.getElementById('extension');
+                if (!ext) return;
+                ext.classList.add('hidden');
+            }
+        </script>
+
+
+
+        <!-- Human touch: Added floating emoji hint -->
+        <div id="emoji-anchor" class="text-[8px] text-[#FFBA00]">Flash light✨</div>
+        <!-- Human touch: Inspection hint for the user -->
+        <div id="inspect-hint">Tap to Inspect</div>
+    </main>
+
+    <!-- FOOTER TOP GRADIENT BAR -->
+      <div class="w-full bg-gradient-to-t from-[#1B0F08] via-[#592720] to-transparent shadow-2xl shadow-[#DDD06A] h-16">
+    </div>
+    <div class="w-full bg-gradient-to-t from-[#1B0F08] via-[#2B170C] to-transparent shadow-2xl shadow-[#140804] h-16">
+    </div>
+    <!-- PROFESSIONAL FULL WIDTH FOOTER -->
+    <footer id="fixed-footer" class="relative w-full h-[420px] overflow-hidden tracking-tight">
+
+        <!-- curved top so footer goes slightly inside page -->
+        <div
+            style="position:absolute;top:-25px;left:50%;transform:translateX(-50%);width:85%;height:90px;background:transparent;border-bottom-left-radius:120px;border-bottom-right-radius:120px;z-index:3;">
+        </div>
+
+        <!-- libs (kept, inside footer) -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+        <!-- Three.js removed here to avoid loading it twice (gallery already loads it) -->
+
+        <style>
+            #canvas-container {
+                width: 100%;
+                height: 420px;
+            }
+
+            /* Coffee + Gold UI Style */
+            .apti-brand {
+                /* color: #FFFFFF; */
+                /* dark coffee */
+                -webkit-text-stroke: 1px #4d1305;
+                /* gold outline */
+                letter-spacing: -4px;
+                transition: all .35s ease;
+            }
+
+            .apti-brand:hover {
+                transform: none;
+            }
+
+            #fixed-footer a {
+                color: #FFFFF0;
+                -webkit-text-stroke: 0.3px #ecea6b;
+                transition: all .3s ease;
+            }
+
+            #fixed-footer a:hover {
+                color: #180101;
+
+                transform: translateY(-1px);
+            }
+        </style>
+
+        <!-- three canvas (kept id so your script works without changes) -->
+        <div id="canvas-container" class="absolute inset-0"></div>
+
+        <!-- top mask so drops appear from hidden gap -->
+        <div style="position:absolute;top:0;left:0;width:100%;height:50px;background:transparent;z-index:2;"></div>
+
+        <!-- AptiCraft Footer UI (same content) -->
+        <div class="absolute bottom-0 left-0 w-full p-6 bg-transparent z-[10]
+                    text-white flex flex-col md:flex-row items-center justify-between 
+                    bg-transparent">
+
+            <a id="apti" href="#" class="apti-brand text-5xl font-bold ">AptiCraft</a>
+
+            <div class="flex flex-wrap justify-center gap-6 mt-4 md:mt-0 text-xl font-bold text-[#FEFEFA] md:mr-12">
+                <a href="https://github.com/Afsana721/flask_apps" target="_blank"
+                    class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">GitHub</a>
+                <a href="https://flask-apps-e45a.onrender.com/" target="_blank"
+                    class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">Portfolio</a>
+                <a href="https://www.openqquantify.com/" target="_blank"
+                    class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">OpenQQuantify</a>
+                <a href="https://www.linkedin.com/in/afsanausa/" target="_blank"
+                    class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">LinkedIn</a>
+            </div>
+        </div>
+
+        <script>
+            (function () {
+
+                const containerFooter = document.getElementById('canvas-container');
+                const foamTextureUrl = "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/foam.png";
+
+                const scene = new THREE.Scene();
+                let w = containerFooter.clientWidth;
+                let h = containerFooter.clientHeight;
+
+                const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+                camera.position.set(0, -0.1, 1.2);
+                camera.lookAt(0, 0, 0);
+
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(w, h);
+                renderer.setPixelRatio(window.devicePixelRatio);
+                containerFooter.appendChild(renderer.domElement);
+
+
+
+                const surfaceGroup = new THREE.Group();
+                scene.add(surfaceGroup);
+
+                function getPlaneSize() {
+                    const distance = camera.position.z;
+                    const vFov = camera.fov * Math.PI / 180;
+                    const planeHeight = 2 * Math.tan(vFov / 2) * distance * 2;
+                    const planeWidth = planeHeight * (containerFooter.clientWidth / containerFooter.clientHeight);
+                    return { width: planeWidth, height: planeHeight };
+                }
+
+                let pSize = getPlaneSize();
+                const geometry = new THREE.PlaneGeometry(pSize.width, pSize.height, 100, 100);
+
+                const loader = new THREE.TextureLoader();
+                loader.setCrossOrigin('anonymous');
+
+                let mesh;
+                loader.load(foamTextureUrl, (tex) => {
+                    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+                    tex.repeat.set(2, 2);
+                    const material = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+                    mesh = new THREE.Mesh(geometry, material);
+                    mesh.rotation.x = -0.78; /* steeper ~45deg tilt so liquid appears to emerge from the top div */
+                    surfaceGroup.add(mesh);
+                });
+
+                /* --- BUBBLE TEXTURE GENERATOR --- */
+                function createBubbleTexture() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 64;
+                    canvas.height = 64;
+                    const ctx = canvas.getContext('2d');
+
+                    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+                    grad.addColorStop(0, 'rgba(255, 245, 230, 0.1)');
+                    grad.addColorStop(0.7, 'rgba(255, 250, 240, 0.4)');
+                    grad.addColorStop(0.9, 'rgba(255, 255, 255, 0.8)');
+                    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(32, 32, 30, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    const coffeeGrad = ctx.createRadialGradient(32, 20, 0, 32, 20, 15);
+                    coffeeGrad.addColorStop(0, '#3D0C02');
+                    coffeeGrad.addColorStop(1, 'rgba(89, 39, 32, 0)');
+                    ctx.fillStyle = coffeeGrad;
+                    ctx.beginPath();
+                    ctx.arc(32, 20, 15, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    return new THREE.CanvasTexture(canvas);
+                }
+                const bubbleTexture = createBubbleTexture();
+
+                function createLiquidTexture() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256;
+                    canvas.height = 256;
+                    const ctx = canvas.getContext('2d');
+                    const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+                    grad.addColorStop(0, 'rgba(30, 15, 5, 0.95)');
+                    grad.addColorStop(0.2, 'rgba(30, 15, 5, 0.6)');
+                    grad.addColorStop(0.5, 'rgba(45, 25, 15, 0.2)');
+                    grad.addColorStop(1, 'rgba(45, 25, 15, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, 256, 256);
+                    return new THREE.CanvasTexture(canvas);
+                }
+                const softTexture = createLiquidTexture();
+
+                const seepageItems = [];
+                const bubbles = [];
+
+                function spawnBubble(x, y, isAmbient = false) {
+                    const bMat = new THREE.MeshBasicMaterial({ map: bubbleTexture, transparent: true, opacity: 0.9 });
+                    const bSize = isAmbient ? (0.004 + Math.random() * 0.02) : (0.02 + Math.random() * 0.04);
+                    const bMesh = new THREE.Mesh(new THREE.PlaneGeometry(bSize, bSize), bMat);
+
+                    bMesh.position.set(x, y, 0.02);
+                    bMesh.rotation.x = -0.3;
+
+                    bubbles.push({
+                        mesh: bMesh,
+                        vx: (Math.random() - 0.5) * 0.0008,
+                        vy: (Math.random() - 0.5) * 0.0008,
+                        life: 1.0,
+                        decay: isAmbient ? (0.00015 + Math.random() * 0.00035) : 0.0012
+                    });
+                    surfaceGroup.add(bMesh);
+                }
+
+                function triggerSeepage(x, y) {
+                    const mat = new THREE.MeshBasicMaterial({
+                        map: softTexture,
+                        transparent: true,
+                        opacity: 0,
+                        depthWrite: false,
+                        blending: THREE.NormalBlending
+                    });
+                    const sMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.25), mat);
+                    sMesh.position.set(x, y, 0.01);
+                    sMesh.rotation.set(-0.3, 0, Math.random() * Math.PI);
+
+                    seepageItems.push({
+                        mesh: sMesh,
+                        life: 0,
+                        x: x,
+                        y: y,
+                        phase: 'expanding',
+                        maxScale: 1.4 + Math.random() * 0.6
+                    });
+                    surfaceGroup.add(sMesh);
+
+                    const numBubbles = 8 + Math.floor(Math.random() * 6);
+                    for (let i = 0; i < numBubbles; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = Math.random() * 0.1;
+                        spawnBubble(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist, false);
+                    }
+                }
+
+                const dripCount = 40; /* more drops across full width */ /* more drops */
+                const dripGeometry = new THREE.SphereGeometry(0.03, 12, 12);
+                const dripMaterial = new THREE.MeshStandardMaterial({ color: 0x241401, roughness: 0.5, metalness: 0.1 });
+                const dripParticles = new THREE.InstancedMesh(dripGeometry, dripMaterial, dripCount);
+                const pDummy = new THREE.Object3D();
+
+                const faucets = [];
+
+                /* spread drip sources across full liquid surface */
+                const faucetCount = dripCount;
+                for (let i = 0; i < faucetCount; i++) {
+                    //const spread = -1.5 + (i/(faucetCount-1))*3.0; /* full width */
+                    const spread = [-1.5, -1.35, -1.2, -1.05, -0.9, -0.75, -0.6, -0.45, -0.3, -0.15, 0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35][i % 20];
+                    faucets.push({
+                        x: spread,
+                        y: 4,
+                        velocity: 0,
+                        active: false,
+                        nextStart: i * 180
+                    });
+                }
+                scene.add(dripParticles);
+
+                function animate(time) {
+                    requestAnimationFrame(animate);
+                    const t = time || performance.now();
+
+                    if (mesh && mesh.geometry) {
+                        const positions = mesh.geometry.attributes.position;
+
+                        mesh.material.map.offset.y = Math.sin(t * 0.00025) * 0.01; /* stronger liquid drift */
+                        mesh.material.map.offset.x = Math.cos(t * 0.00035) * 0.01; /* horizontal liquid motion */
+
+                        if (Math.random() < 0.18) {
+                            const randX = (Math.random() - 0.5) * pSize.width;
+                            const randY = (Math.random() - 0.5) * pSize.height;
+                            spawnBubble(randX, randY, true);
+                            triggerSeepage(randX, randY); /* full-surface ripple effect */
+                        }
+
+                        for (let i = 0; i < positions.count; i++) {
+                            const x = positions.getX(i);
+                            const y = positions.getY(i);
+                            const swelling = Math.sin(t * 0.0002) * 0.012;
+
+                            const wave = Math.sin(x * 1.5 + t * 0.0004) * 0.006 +
+                                Math.cos(y * 1.3 + t * 0.0003) * 0.006 +
+                                Math.sin((x + y) * 2.0 + t * 0.0008) * 0.002;
+
+                            let splash = 0;
+                            faucets.forEach(p => {
+                                if (p.active && p.y < 0.1 && p.y > -0.1) {
+                                    const dx = x - p.x;
+                                    const dy = y;
+                                    const dist = Math.sqrt(dx * dx + dy * dy);
+                                    splash += Math.sin(t * 0.015 - dist * 35) * (0.04 * (1 - Math.min(dist / 0.4, 1)));
+                                }
+                            });
+                            positions.setZ(i, wave + splash + swelling);
+                        }
+                        positions.needsUpdate = true;
+
+                        faucets.forEach((p, i) => {
+                            /* accumulate liquid at top before dropping */
+                            if (!p.active && t > p.nextStart) {
+                                p.build = (p.build || 0) + 0.02; /* liquid gathering */
+                                if (p.build > 1 + Math.random() * 0.5) {
+                                    p.active = true;
+                                    p.y = 2.5;
+                                    p.velocity = 0;
+                                    p.build = 0;
+                                }
+                            }
+
+                            if (p.active) {
+                                p.velocity += 0.0001;
+                                p.y -= p.velocity;
+                                pDummy.position.set(p.x, p.y, 0.05);
+                                const s = 1 + p.velocity * 9;
+                                //pDummy.scale.set(1/s, s, 1/s);
+                                pDummy.scale.set(0.2, 1.1, 0.7);
+
+                                if (p.y < 0) {
+                                    /* splash effect when drop hits surface */
+                                    triggerSeepage(p.x, 0);
+                                    for (let s = 0; s < 4; s++) {
+                                        const angle = Math.random() * Math.PI * 2;
+                                        const dist = 0.05 + Math.random() * 0.08;
+                                        const sx = p.x + Math.cos(angle) * dist;
+                                        const sy = Math.sin(angle) * 0.02;
+                                        triggerSeepage(sx, sy);
+                                    }
+                                    p.active = false;
+                                    p.y = -10;
+                                    p.nextStart = t + 1500 + Math.random() * 3500; /* staggered drops */
+                                }
+                            } else {
+                                /* small bulge to show liquid building */
+                                const bulge = (p.build || 0) * 0.04;
+                                pDummy.position.set(p.x, 1.2 + bulge, 0.04);
+                                pDummy.scale.set(0.6 + bulge, 0.6 + bulge, 0.6);
+                            }
+
+                            pDummy.updateMatrix();
+                            dripParticles.setMatrixAt(i, pDummy.matrix);
+                        });
+                        dripParticles.instanceMatrix.needsUpdate = true;
+
+                        for (let i = seepageItems.length - 1; i >= 0; i--) {
+                            const s = seepageItems[i];
+                            if (s.phase === 'expanding') {
+                                s.life += 0.07;
+                                if (s.life >= 1) s.phase = 'diluting';
+                            } else {
+                                s.life -= 0.005;
+                            }
+                            if (s.life <= 0) {
+                                surfaceGroup.remove(s.mesh);
+                                seepageItems.splice(i, 1);
+                                continue;
+                            }
+                            const currentScale = (s.phase === 'expanding' ? s.life : 1 + (1 - s.life) * 0.5) * s.maxScale;
+                            s.mesh.scale.set(currentScale, currentScale, 1);
+                            s.mesh.material.opacity = Math.max(0, s.life * 0.7);
+                            const wAt = Math.sin(s.x * 1.5 + t * 0.0004) * 0.006 + Math.cos(s.y * 1.3 + t * 0.0003) * 0.006 + Math.sin(t * 0.0002) * 0.012;
+                            s.mesh.position.z = wAt + 0.001;
+                        }
+
+                        for (let i = bubbles.length - 1; i >= 0; i--) {
+                            const b = bubbles[i];
+                            b.life -= b.decay;
+                            b.mesh.position.x += b.vx;
+                            b.mesh.position.y += b.vy;
+
+                            const waveAt = Math.sin(b.mesh.position.x * 1.5 + t * 0.0004) * 0.006 + Math.cos(b.mesh.position.y * 1.3 + t * 0.0003) * 0.016 + Math.sin(t * 0.0012) * 0.022;
+                            b.mesh.position.z = waveAt + 0.08;
+                            b.mesh.material.opacity = b.life;
+
+                            if (b.life <= 0) {
+                                surfaceGroup.remove(b.mesh);
+                                bubbles.splice(i, 1);
+                            }
+                        }
+                    }
+                    renderer.render(scene, camera);
+                }
+
+                animate();
+
+                window.addEventListener('resize', () => {
+                    w = containerFooter.clientWidth;
+                    h = containerFooter.clientHeight;
+                    renderer.setSize(w, h);
+                    camera.aspect = w / h;
+                    camera.updateProjectionMatrix();
+                    pSize = getPlaneSize();
+                    if (mesh) {
+                        mesh.geometry.dispose();
+                        mesh.geometry = new THREE.PlaneGeometry(pSize.width, pSize.height, 100, 100);
+                    }
+                });
+            })();
+        </script>
+    </footer>
+
+    <div id="info" class="p-4 bg-gray-900 bg-opacity-80 text-white rounded-lg shadow-xl text-sm md:text-base">
+        Status: Loading...
+    </div>
+    <button id="rotate-left-btn"
+        class="fixed bottom-16 left-8 z-20 bg-gray-500 hover:bg-opacity-80 text-white font-normal py-1 px-2 rounded-full shadow-xl transition-colors">
+        &larr;
+    </button>
+    <button id="toggle-control-btn"
+        class="fixed top-1/2 right-4 -translate-y-1/2 z-20 bg-[#c5a059]/10 text-[#3B3C36] text-xs font-bold px-6 py-3 rounded-full shadow-2xl hover:bg-[#FED8B1] transition-all uppercase tracking-widest">
+        Switch Zoom
+    </button>
+
+    <script>
+        // ===== Existing Three.js Logic (All Same) =====
+        const glbUrls = [
+            'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/model-1766279337952.glb',
+            'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/model-1766279503709.glb',
+            'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/model-1766279546043.glb',
+            'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/model-1766279647930.glb',
+            'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/coffee.glb'
+        ];
+
+        const treeCoordinates = [
+            [394, 220], [449, 228], [458, 194], [512, 238], [496, 265],
+            [457, 277], [408, 283], [397, 300], [432, 297], [463, 300],
+            [498, 308], [520, 292], [529, 242], [448, 182], [403, 198],
+            [380, 240], [452, 325], [447, 361], [449, 393], [449, 405]
+        ];
+
+        const lightColors = [0x00ff00, 0x00ffff, 0xffff00, 0xff00ff, 0x00ffaa];
+        const modelData = glbUrls.map((url) => ({ url: url, name: '' }));
+
+        const container = document.getElementById('webgl-container');
+        const emojiHint = document.getElementById('emoji-anchor');
+        //glb description dev container
+        const menu = document.getElementById('description');
+
+        // Human touch: added areaLights array for broader flash
+        let scene, camera, renderer, controls, flashLight, focusRing;
+        let wireGroup, wireLight; // wireframe globals
+        let areaLights = [];
+        let models = [];
+        let currentModelIndex = 0;
+        let isTransitioning = false;
+        let nextTransitionTimeout = null;
+        const SLIDER_DELAY_MS = 5000;
+        let is3DControlActive = true;
+
+        const POSITIONS = {
+            RIGHT_TOP: new THREE.Vector3(15, -5, -20),
+            CENTER: new THREE.Vector3(5, -4, 0),
+            FAR_LEFT: new THREE.Vector3(-16, -2, -14)
+        };
+        const TRANSITION_SPEED = 0.05;
+        const LEAN_FORWARD_RADIANS = Math.PI / 2;
+
+        // ===== CLEAN COMPACT VISITOR BILLBOARD =====
+        let chartScene, chartCamera, chartRenderer;
+
+        function createChartOverlay() {
+
+            chartScene = new THREE.Scene();
+
+            chartCamera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+            chartCamera.position.set(0, 0, 7);
+
+            chartRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            chartRenderer.setSize(260, 220);
+            chartRenderer.domElement.style.position = "absolute";
+            chartRenderer.domElement.style.left = "50%";
+            chartRenderer.domElement.style.transform = "translateX(-55%)";
+            chartRenderer.domElement.style.top = "18px";
+            chartRenderer.domElement.style.zIndex = "30";
+            //chartRenderer.domElement.style.border = "1px solid #FFD700";
+            container.appendChild(chartRenderer.domElement);
+
+            // BOARD SMALLER
+            const board = new THREE.Mesh(
+                new THREE.PlaneGeometry(6.2, 3.6),
+                new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.01 })
+            );
+            chartScene.add(board);
+
+            // HEADING
+            const headingCanvas = document.createElement('canvas');
+            headingCanvas.width = 1300;
+            headingCanvas.height = 256;
+            const hctx = headingCanvas.getContext('2d');
+
+            hctx.fillStyle = "#FF4F00";
+            //hctx.shadowColor = "#F5F5F5";
+            // hctx.shadowBlur = 10;
+            hctx.font = "900 180px Arial";
+            hctx.fillText("SITE TRAFFIC", 60, 240);
+
+            const headingTex = new THREE.CanvasTexture(headingCanvas);
+            const headingMesh = new THREE.Mesh(
+                new THREE.PlaneGeometry(3, 0.95),
+                new THREE.MeshBasicMaterial({ map: headingTex, transparent: true })
+            );
+            headingMesh.position.set(0, 1.6, 0.02);
+            board.add(headingMesh);
+
+            // DATA
+            let hourly = 1200;
+            let stay = 3.1;
+            let min = 2;
+            let max = 48;
+
+            // smooth fake data engine
+            let targetTraffic = hourly;
+
+            function makeTextMesh(size, y) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1300;
+                canvas.height = 400;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "#00FFFF";
+                ctx.font = "900 150px Arial";
+                //ctx.shadowColor = "#FFD700";
+                //ctx.shadowBlur = 25;
+
+                const tex = new THREE.CanvasTexture(canvas);
+                const mesh = new THREE.Mesh(
+                    new THREE.PlaneGeometry(5.6, 1.0),
+                    new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+                );
+                mesh.userData.ctx = ctx;
+                mesh.userData.canvas = canvas;
+                mesh.userData.tex = tex;
+                mesh.position.set(0, y, 0.02);
+                board.add(mesh);
+                return mesh;
+            }
+
+            const val1 = makeTextMesh(72, 0.55);
+            const val2 = makeTextMesh(64, 0.2);
+            const val3 = makeTextMesh(64, -0.2);
+
+            function drawText(mesh, text) {
+                const ctx = mesh.userData.ctx;
+                const canvas = mesh.userData.canvas;
+
+                // reset canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // SIMPLE CLEAR VALUE TEXT (no shadow / no spacing tricks)
+                ctx.textAlign = "center";            // center so numbers stay compact
+                ctx.textBaseline = "middle";
+                ctx.font = "bold 110px Arial";       // clean readable font
+                ctx.fillStyle = "#FF0000"; // bright red for strong visibility           // dark red for strong contrast
+
+                // draw value text
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+                mesh.userData.tex.needsUpdate = true;
+            }
+
+            // GRAPH (3D COLORFUL LIKE IMAGE)
+            const graphGroup = new THREE.Group();
+            graphGroup.position.y = -1.2;
+            board.add(graphGroup);
+
+            let history = Array.from({ length: 10 }, () => Math.random() * 1.5 + 0.6);
+            const bars = [];
+            const colors = [0xFF0800, 0x8806CE, 0xFFD700, 0x4dff88, 0xF94D00, 0x0000FF];
+
+            for (let i = 0; i < 10; i++) {
+                const geo = new THREE.BoxGeometry(0.25, 1, 0.25);
+                const mat = new THREE.MeshStandardMaterial({ color: colors[i % colors.length], roughness: 0.3, metalness: 0.2 });
+                const bar = new THREE.Mesh(geo, mat);
+                bar.position.set(-2.2 + (i * 0.5), 0, 0.15);
+                bar.scale.y = history[i];
+                bars.push(bar);
+                graphGroup.add(bar);
+            }
+
+            // glossy grid floor
+            const grid = new THREE.GridHelper(6, 12, 0xF5F5F5, 0xFFF8E7);
+            grid.position.y = -0.05;
+            graphGroup.add(grid);
+
+            let line;
+            function buildLine() {
+                const pts = [];
+                for (let i = 0; i < bars.length; i++) {
+                    pts.push(new THREE.Vector3(-2.2 + (i * 0.5), bars[i].scale.y, 0.3));
+                }
+                return new THREE.Line(
+                    new THREE.BufferGeometry().setFromPoints(pts),
+                    new THREE.LineBasicMaterial({ color: 0xFFEF00, linewidth: 2 })
+                );
+            }
+
+            line = buildLine();
+            graphGroup.add(line);
+
+            const light1 = new THREE.PointLight(0xffffff, 0.9);
+            light1.position.set(2, 4, 3);
+            chartScene.add(light1);
+
+            const amb = new THREE.AmbientLight(0xffffff, 0.4);
+            chartScene.add(amb);
+
+            let lastUpdate = 0;
+
+            function animateChart(now = 0) {
+                requestAnimationFrame(animateChart);
+
+                // continuous random movement engine
+                const drift = (Math.random() - 0.5) * 0.15;
+
+                history.shift();
+                history.push(Math.max(0.4, history[history.length - 1] + drift));
+
+                // smooth bar movement (not sequential)
+                bars.forEach((b, i) => {
+                    const randomWave = Math.sin((now * 0.002) + i * 1.3) * 0.2;
+                    const target = history[i] + randomWave + (Math.random() * 0.05);
+                    b.scale.y += (target - b.scale.y) * 0.08;
+                });
+
+                // rebuild yellow curve from bar tops
+                graphGroup.remove(line);
+                line.geometry.dispose();
+                line = buildLine();
+                graphGroup.add(line);
+
+                // update numbers
+                hourly += (Math.random() * 60 - 30);
+                stay += (Math.random() * 0.04 - 0.02);
+                min = Math.max(1, Math.floor(hourly / 850));
+                max = Math.floor(hourly / 22);
+
+                drawText(val1, `Traffic/hr: ${Math.floor(hourly)}`);
+                drawText(val2, `Avg stay: ${stay.toFixed(1)}m`);
+                drawText(val3, `Min/Max: ${min}/${max}`);
+
+                chartRenderer.render(chartScene, chartCamera);
+            }
+
+            animateChart();
+        }
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 25);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+            createChartOverlay();
+
+            // Human touch: Add "Area Flash" setup (Top, Left, Right)
+            const lightPositions = [
+                [8, 35, 5],   // Main front
+                [-5, 2, 5],  // Left fill
+                [5, 2, 5],   // Right fill
+                [0, 40, 20]   // Top overhead
+            ];
+            lightPositions.forEach(pos => {
+                const light = new THREE.PointLight(0xffffff, 8, 35);
+                light.position.set(...pos);
+                scene.add(light);
+                areaLights.push(light);
+            });
+            // Assign one as the legacy flashLight for backward compatibility logic
+            flashLight = areaLights[0];
+
+            // Human touch: Add Podium Focus Ring (Visual Cue)
+            const ringGeo = new THREE.RingGeometry(8, 8, 84);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xDF00FF, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+            focusRing = new THREE.Mesh(ringGeo, ringMat);
+            focusRing.rotation.x = Math.PI / 4;
+            focusRing.position.y = -0.6;
+            scene.add(focusRing);
+
+            addTreeLights();
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.target.set(0, 0, 0);
+
+            window.addEventListener('resize', onWindowResize, false);
+            document.getElementById('rotate-left-btn').addEventListener('click', () => console.warn("Panorama rotation restricted"));
+            document.getElementById('toggle-control-btn').addEventListener('click', toggleInteractionMode);
+
+            // Human touch: Trigger large area flash on user click
+            container.addEventListener('click', () => {
+                if (!isTransitioning && models.length > 0) {
+                    // Turn the flash ON
+                    areaLights.forEach(light => {
+                        light.intensity = 15; // Powerful area burst
+                    });
+
+                    document.getElementById('inspect-hint').style.opacity = '0';
+                    emojiHint.style.opacity = '0';
+
+                    // Turn the flash OFF after a moment
+                    setTimeout(() => {
+                        areaLights.forEach(light => {
+                            light.intensity = 8;
+                        });
+                    }, 1200);
+                }
+            });
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function addTreeLights() {
+            let colorIndex = 0;
+            treeCoordinates.forEach(coord => {
+                const x = coord[0], y = coord[1];
+                const normalizedX = (x - 454.5) * 0.06;
+                const normalizedY = -(y - 293.5) * 0.04;
+                const position = new THREE.Vector3(normalizedX, normalizedY, -30);
+                const color = lightColors[colorIndex % lightColors.length];
+                colorIndex++;
+                const pointLight = new THREE.PointLight(color, 1.5, 50, 2);
+                pointLight.position.copy(position);
+                scene.add(pointLight);
+            });
+        }
+
+        function toggleInteractionMode() {
+            is3DControlActive = !is3DControlActive;
+            const button = document.getElementById('toggle-control-btn');
+            controls.enabled = is3DControlActive;
+            is3DControlActive ? container.classList.remove('pass-through') : container.classList.add('pass-through');
+            button.textContent = is3DControlActive ? 'Zoom GLB' : 'Zoom 360';
+        }
+
+        function loadModels() {
+            const loader = new THREE.GLTFLoader();
+            let modelsLoaded = 0;
+
+            modelData.forEach((data, index) => {
+                loader.load(data.url, (gltf) => {
+                    const model = gltf.scene;
+                    model.position.copy(POSITIONS.RIGHT_TOP);
+                    model.visible = false;
+
+                    const box = new THREE.Box3().setFromObject(model);
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale = 20 / maxDim;
+                    model.scale.set(scale, scale, scale);
+
+                    scene.add(model);
+                    models.push(model);
+
+                    // wireframe ONLY for index 2 → visible on load, centered, readable size
+                    if (index === 2) {
+                        wireGroup = new THREE.Group();
+
+                        model.traverse(node => {
+                            if (node.isMesh && node.geometry) {
+                                const edges = new THREE.EdgesGeometry(node.geometry, 3);
+                                const mat = new THREE.LineBasicMaterial({
+                                    color: 0x99FFFF, // soft gold / light pink-gold
+                                    transparent: true,
+                                    opacity: 2
+                                });
+                                const wire = new THREE.LineSegments(edges, mat);
+                                wireGroup.add(wire);
+                            }
+                        });
+
+                        // initial appearance: same logic as GLB (visible, readable)
+                        wireGroup.position.set(-12, 4, 0); // top‑center, not blocking
+                        wireGroup.scale.set(scale * 0.8, scale * 0.8, scale * 0.8);
+                        scene.add(wireGroup);
+
+                        // dedicated soft blinking light (not material blink)
+                        wireLight = new THREE.PointLight(0xFFFFF0, 10, 150);
+                        wireLight.position.set(0, 4.5, 3);
+                        scene.add(wireLight);
+                    }
+
+                    modelsLoaded++;
+                    if (modelsLoaded === modelData.length) {
+                        models[currentModelIndex].visible = true;
+                        startTransition(currentModelIndex, POSITIONS.CENTER);
+                    }
+
+                }, undefined, (err) => {
+                    console.error('GLB load error:', err);
+                });
+            });
+        }
+
+        function startTransition(index, targetPosition) {
+            isTransitioning = true;
+            models[index].targetPosition = targetPosition;
+            models[index].targetRotationX = 0;
+            // Human touch: Hide visual cues during transition
+            focusRing.material.opacity = 0;
+            document.getElementById('inspect-hint').style.opacity = '0';
+            emojiHint.style.opacity = '0';
+        }
+
+        // Human meaning: Ask the server for the line that matches this GLB
+        async function showDescription(i) {
+            try {
+                const res = await fetch(`/glb-text?i=${i}`);
+                const text = await res.text();
+                menu.textContent = text;
+                menu.style.display = 'block';
+
+                // reset classes safely
+                menu.classList.remove('sheet-in', 'sheet-roll', 'sheet-throw');
+                void menu.offsetWidth; // restart animation
+                menu.classList.add('sheet-in');
+
+                // after display, roll like ancient scroll
+                setTimeout(() => {
+                    menu.classList.remove('sheet-in');
+                    menu.classList.add('sheet-roll');
+                }, 1800);
+
+                // then throw the rolled scroll
+                setTimeout(() => {
+                    menu.classList.remove('sheet-roll');
+                    menu.classList.add('sheet-throw');
+                }, 2400);
+
+                // finally clear
+                setTimeout(() => {
+                    menu.classList.remove('sheet-in', 'sheet-roll', 'sheet-throw');
+                    menu.style.display = 'none';
+                }, 3000);
+            } catch (e) {
+                console.warn('Description not ready');
+            }
+        }
+
+        function changeModel(direction) {
+            if (isTransitioning || models.length === 0) return;
+            isTransitioning = true;
+            const oldModel = models[currentModelIndex];
+            currentModelIndex = (currentModelIndex + direction + models.length) % models.length;
+            const newModel = models[currentModelIndex];
+            oldModel.targetPosition = POSITIONS.FAR_LEFT;
+            oldModel.targetRotationX = LEAN_FORWARD_RADIANS;
+            newModel.position.copy(POSITIONS.RIGHT_TOP);
+            newModel.visible = true;
+            newModel.targetPosition = POSITIONS.CENTER;
+            newModel.targetRotationX = 0;
+            // Human touch: reset cues
+            focusRing.material.opacity = 0;
+            document.getElementById('inspect-hint').style.opacity = '0';
+            emojiHint.style.opacity = '0';
+        }
+
+        function updateEmojiPosition() {
+            if (models.length > 0 && !isTransitioning) {
+                const model = models[currentModelIndex];
+                const vector = new THREE.Vector3();
+                // Get world position of top of model
+                vector.setFromMatrixPosition(model.matrixWorld);
+                vector.y += 2.5; // Offset emoji above model
+
+                vector.project(camera);
+
+                const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+
+                emojiHint.style.left = `${x}px`;
+                emojiHint.style.top = `${y}px`;
+                emojiHint.style.opacity = is3DControlActive ? '1' : '0';
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (is3DControlActive) {
+                controls.update();
+                updateEmojiPosition();
+            }
+
+            // Human touch: decay all area lights
+            areaLights.forEach(light => {
+                if (light.intensity > 0) {
+                    light.intensity *= 0.92; // Slightly slower decay for bigger feel
+                }
+            });
+
+            if (isTransitioning) {
+                let activeTransitions = 0;
+                models.forEach((model) => {
+                    if (model.targetPosition) {
+                        model.position.lerp(model.targetPosition, TRANSITION_SPEED);
+                        if (model.targetRotationX !== undefined) model.rotation.x = THREE.MathUtils.lerp(model.rotation.x, model.targetRotationX, TRANSITION_SPEED);
+                        model.rotation.y += 0.01;
+                        if (model.position.distanceTo(model.targetPosition) > 0.1) activeTransitions++;
+                        else {
+                            model.position.copy(model.targetPosition);
+                            delete model.targetPosition;
+                            if (model.position.equals(POSITIONS.FAR_LEFT)) {
+                                model.visible = false;
+                                model.position.copy(POSITIONS.RIGHT_TOP);
+                            }
+                        }
+                    }
+                });
+                if (activeTransitions === 0) {
+                    isTransitioning = false;
+                    // Human meaning: the model is now on the podium
+                    showDescription(currentModelIndex);
+                    if (models.length > 1) {
+                        if (nextTransitionTimeout) clearTimeout(nextTransitionTimeout);
+                        nextTransitionTimeout = setTimeout(() => changeModel(1), SLIDER_DELAY_MS);
+                    }
+                }
+            } else if (models.length > 0 && is3DControlActive) {
+                models[currentModelIndex].rotation.y += 0.005;
+                // Human touch: Pulse podium ring and show hint
+                const pulse = Math.sin(Date.now() * 0.003) * 0.25 + 0.35;
+                focusRing.material.opacity = pulse;
+                focusRing.scale.setScalar(1 + Math.sin(Date.now() * 0.003) * 0.04);
+                document.getElementById('inspect-hint').style.opacity = '0.8';
+            }
+
+
+            // wireframe glow pulse (material based, no light)
+            if (wireGroup) {
+                const pulse = 0.75 + Math.sin(Date.now() * 0.004) * 0.25;
+                wireGroup.children.forEach(l => {
+                    l.material.opacity = pulse;
+                });
+            }
+            renderer.render(scene, camera);
+        }
+
+        // ===== PAGE LOAD =====
+        // === NAV COFFEE DUST INIT ===
+        function initNavDust() {
+            const holder = document.getElementById('nav-dust');
+            if (!holder || !window.THREE) return;
+
+            const s = new THREE.Scene();
+            const cam = new THREE.OrthographicCamera(-window.innerWidth / 2, window.innerWidth / 2, 70, -70, 1, 1000);
+            cam.position.z = 10;
+
+            const r = new THREE.WebGLRenderer({ alpha: true });
+            r.setSize(window.innerWidth, 140);
+            r.setPixelRatio(window.devicePixelRatio);
+            holder.appendChild(r.domElement);
+
+            const items = [];
+            const geo = new THREE.PlaneGeometry(56, 56);
+            const texLoader = new THREE.TextureLoader();
+            texLoader.crossOrigin = 'anonymous';
+
+            const urls = [
+                'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/ccb.png',
+                'https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/ccb1.png'
+            ];
+
+            urls.forEach(url => {
+                texLoader.load(url, (tex) => {
+                    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false });
+
+                    for (let i = 0; i < 40; i++) {
+                        const m = new THREE.Mesh(geo, mat.clone());
+                        m.position.x = (Math.random() - .5) * window.innerWidth;
+                        m.position.y = -90 - Math.random() * 60;
+
+                        m.rotation.z = Math.random() * Math.PI;
+                        m.userData.sp = .25 + Math.random() * .65;
+                        items.push(m);
+                        s.add(m);
+
+                    }
+                });
+            });
+
+            const aptiText = document.getElementById("apti");
+            if (aptiText) aptiText.textContent = "AptiCraft";
+            let hue = 0;
+
+            function loop() {
+                for (const p of items) {
+                    p.position.y += p.userData.sp;
+                    if (p.position.y > 70) p.position.y = -70;
+                }
+                if (aptiText) {
+                    hue = (hue + 1) % 360;
+                    aptiText.style.color = `hsl(${hue}, 85%, 60%)`;
+                }
+                r.render(s, cam);
+                requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        window.onload = function () {
+            init();
+            initNavDust(); // nav dust layer
+            loadModels();    // load GLB models
+            animate();       // start render loop
+        };
+
+        // ===== EXPERIENCE NAV HANDLER =====
+        // Call this from Experience button onclick
+        function onExperienceClick() {
+            // 1) Hide existing Three.js 360 / gallery
+            const gallery360 = document.getElementById('webgl-container');
+            if (gallery360) gallery360.style.display = 'none';
+
+            // 2) Show extension (Marzipano)
+            if (typeof openExtension === 'function') {
+                openExtension();
+            } else {
+                console.warn('openExtension() not found');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coffee Foam - Swelling Simulation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <style>
+    body, html { 
+      margin: 0; 
+      padding: 0; 
+      width: 100%; 
+      height: 100%; 
+      overflow: hidden; 
+      background: #000;
+    }
+
+    #canvas-container { 
+      width: 100vw; 
+      height: 100vh; 
+    }
+
+    /* Coffee + Gold UI Style */
+    .apti-brand{
+      color:#3D0C02; /* dark coffee */
+      -webkit-text-stroke:1px #D4AF37; /* gold outline */
+      text-shadow:0 0 6px rgba(212,175,55,0.4);
+      transition:all .35s ease;
+    }
+
+    .apti-brand:hover{
+      text-shadow:0 0 10px #D4AF37,0 0 25px rgba(212,175,55,0.6);
+      transform:translateY(-2px) scale(1.02);
+    }
+
+    #fixed-footer a{
+      color:#3D0C02;
+      -webkit-text-stroke:0.3px #D4AF37;
+      transition:all .3s ease;
+    }
+
+    #fixed-footer a:hover{
+      color:#4e1508;
+      text-shadow:0 0 8px rgba(243, 231, 6, 0.6);
+      transform:translateY(-1px);
+    }
+  </style>
+  </style>
+</head>
+<body class="relative">
+  <div id="canvas-container"></div>
+
+  <!-- AptiCraft Footer Section -->
+  <footer id="fixed-footer" class="absolute bottom-0 left-0 w-full p-6 bg-transparent z-50
+                           text-white flex flex-col md:flex-row items-center justify-between opacity-90
+                           border-t border-white/5 backdrop-blur-sm bg-black/10">
+
+    <!-- AptiCraft Brand Text -->
+    <a id="apti" href="#" class="apti-brand text-5xl font-bold tracking-wider">AptiCraft</a>
+
+    <!-- Social Links and Info -->
+    <div class="flex flex-wrap justify-center gap-6 mt-4 md:mt-0 text-xl font-bold text-[#3D0C02] md:mr-12">
+        <a href="https://github.com/Afsana721/flask_apps" target="_blank"
+            class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">GitHub</a>
+        <a href="https://flask-apps-e45a.onrender.com/" target="_blank"
+            class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">Portfolio</a>
+        <a href="https://www.openqquantify.com/" target="_blank"
+            class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">OpenQQuantify</a>
+        <a href="mailto:afsanaafroze21@gmail.com" target="_blank"
+            class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">Email</a>
+        <a href="https://www.linkedin.com/in/afsanausa/" target="_blank"
+            class="hover:text-[#C19A6B] transition duration-200 border-b border-transparent hover:border-[#3D0C02]">LinkedIn</a>
+    </div>
+  </footer>
+
+  <script>
+    const container = document.getElementById('canvas-container');
+    const foamTextureUrl = "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/foam.png";
+    
+    const scene = new THREE.Scene();
+    let w = window.innerWidth;
+    let h = window.innerHeight;
+    
+    const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+    camera.position.set(0, -0.4, 1.2); 
+    camera.lookAt(0, 0, 0);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+    const topLight = new THREE.PointLight(0xffffff, 8);
+    topLight.position.set(1, 2, 2);
+    scene.add(topLight);
+
+    const surfaceGroup = new THREE.Group();
+    scene.add(surfaceGroup);
+
+    function getPlaneSize() {
+      const distance = camera.position.z;
+      const vFov = camera.fov * Math.PI / 180;
+      const planeHeight = 2 * Math.tan(vFov / 2) * distance * 2;
+      const planeWidth = planeHeight * (window.innerWidth / window.innerHeight);
+      return { width: planeWidth, height: planeHeight };
+    }
+
+    let pSize = getPlaneSize();
+    const geometry = new THREE.PlaneGeometry(pSize.width, pSize.height, 100, 100);
+    
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
+    
+    let mesh;
+    loader.load(foamTextureUrl, (tex) => {
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(2, 2);
+      const material = new THREE.MeshStandardMaterial({ 
+        map: tex, 
+        side: THREE.DoubleSide,
+        roughness: 0.4,
+        metalness: 0.05
+      });
+      mesh = new THREE.Mesh(geometry, material);
+      mesh.rotation.x = -0.3; 
+      surfaceGroup.add(mesh);
+    });
+
+    /* --- BUBBLE TEXTURE GENERATOR --- */
+    function createBubbleTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      
+      const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      grad.addColorStop(0, 'rgba(255, 245, 230, 0.1)');
+      grad.addColorStop(0.7, 'rgba(255, 250, 240, 0.4)');
+      grad.addColorStop(0.9, 'rgba(255, 255, 255, 0.8)');
+      grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(32, 32, 30, 0, Math.PI * 2);
+      ctx.fill();
+
+      const coffeeGrad = ctx.createRadialGradient(32, 20, 0, 32, 20, 15);
+      coffeeGrad.addColorStop(0, '#3D0C02'); 
+      coffeeGrad.addColorStop(1, 'rgba(89, 39, 32, 0)'); 
+      ctx.fillStyle = coffeeGrad;
+      ctx.beginPath();
+      ctx.arc(32, 20, 15, 0, Math.PI * 2);
+      ctx.fill();
+
+      return new THREE.CanvasTexture(canvas);
+    }
+    const bubbleTexture = createBubbleTexture();
+
+    function createLiquidTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+      grad.addColorStop(0, 'rgba(30, 15, 5, 0.95)'); 
+      grad.addColorStop(0.2, 'rgba(30, 15, 5, 0.6)');
+      grad.addColorStop(0.5, 'rgba(45, 25, 15, 0.2)');
+      grad.addColorStop(1, 'rgba(45, 25, 15, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 256, 256);
+      return new THREE.CanvasTexture(canvas);
+    }
+    const softTexture = createLiquidTexture();
+
+    const seepageItems = [];
+    const bubbles = [];
+
+    function spawnBubble(x, y, isAmbient = false) {
+        const bMat = new THREE.MeshBasicMaterial({ map: bubbleTexture, transparent: true, opacity: 0.9 });
+        const bSize = isAmbient ? (0.005 + Math.random() * 0.02) : (0.02 + Math.random() * 0.05);
+        const bMesh = new THREE.Mesh(new THREE.PlaneGeometry(bSize, bSize), bMat);
+        
+        bMesh.position.set(x, y, 0.02);
+        bMesh.rotation.x = -0.3;
+        
+        bubbles.push({
+          mesh: bMesh,
+          vx: (Math.random() - 0.5) * 0.0008,
+          vy: (Math.random() - 0.5) * 0.0008,
+          life: 1.0,
+          decay: isAmbient ? (0.0003 + Math.random() * 0.0008) : 0.002
+        });
+        surfaceGroup.add(bMesh);
+    }
+
+    function triggerSeepage(x, y) {
+      const mat = new THREE.MeshBasicMaterial({ 
+        map: softTexture,
+        transparent: true, 
+        opacity: 0, 
+        depthWrite: false,
+        blending: THREE.NormalBlending 
+      });
+      const sMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.25), mat);
+      sMesh.position.set(x, y, 0.01);
+      sMesh.rotation.set(-0.3, 0, Math.random() * Math.PI);
+      
+      seepageItems.push({
+        mesh: sMesh,
+        life: 0,
+        x: x,
+        y: y,
+        phase: 'expanding', 
+        maxScale: 1.4 + Math.random() * 0.6
+      });
+      surfaceGroup.add(sMesh);
+
+      const numBubbles = 8 + Math.floor(Math.random() * 6);
+      for(let i=0; i<numBubbles; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 0.1;
+        spawnBubble(x + Math.cos(angle) * dist, y + Math.sin(angle) * dist, false);
+      }
+    }
+
+    const dripCount = 8; 
+    const dripGeometry = new THREE.SphereGeometry(0.03, 12, 12);
+    const dripMaterial = new THREE.MeshStandardMaterial({ color: 0x241401, roughness: 0.5, metalness: 0.1 });
+    const dripParticles = new THREE.InstancedMesh(dripGeometry, dripMaterial, dripCount);
+    const pDummy = new THREE.Object3D();
+    
+    const faucets = [
+      { x: -1.2, y: -10, velocity: 0, active: false, nextStart: 0 },
+      { x: -0.9, y: -10, velocity: 0, active: false, nextStart: 400 },
+      { x: -0.6, y: -10, velocity: 0, active: false, nextStart: 800 },
+      { x: -0.3, y: -10, velocity: 0, active: false, nextStart: 1200 },
+      { x:  0.0, y: -10, velocity: 0, active: false, nextStart: 1600 },
+      { x:  0.3, y: -10, velocity: 0, active: false, nextStart: 2000 },
+      { x:  0.6, y: -10, velocity: 0, active: false, nextStart: 2400 },
+      { x:  0.9, y: -10, velocity: 0, active: false, nextStart: 2800 }
+    ];
+    scene.add(dripParticles);
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+      const t = time || performance.now();
+      
+      if (mesh && mesh.geometry) {
+        const positions = mesh.geometry.attributes.position;
+        
+        mesh.material.map.offset.y = Math.sin(t * 0.0002) * 0.005;
+        mesh.material.map.offset.x = Math.cos(t * 0.0003) * 0.005;
+
+        if (Math.random() < 0.12) { 
+           const randX = (Math.random() - 0.5) * pSize.width;
+           const randY = (Math.random() - 0.5) * pSize.height;
+           spawnBubble(randX, randY, true);
+        }
+
+        for (let i = 0; i < positions.count; i++) {
+          const x = positions.getX(i);
+          const y = positions.getY(i);
+          const swelling = Math.sin(t * 0.0002) * 0.012; 
+          
+          const wave = Math.sin(x * 1.5 + t * 0.0004) * 0.006 + 
+                       Math.cos(y * 1.3 + t * 0.0003) * 0.006 + 
+                       Math.sin((x + y) * 2.0 + t * 0.0008) * 0.002;
+          
+          let splash = 0;
+          faucets.forEach(p => {
+              if(p.active && p.y < 0.1 && p.y > -0.1) {
+                const dx = x - p.x;
+                const dy = y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                splash += Math.sin(t * 0.015 - dist * 35) * (0.04 * (1 - Math.min(dist/0.4, 1)));
+              }
+          });
+          positions.setZ(i, wave + splash + swelling);
+        }
+        positions.needsUpdate = true;
+
+        faucets.forEach((p, i) => {
+          if (!p.active && t > p.nextStart) {
+            p.active = true;
+            p.y = 2.5;
+            p.velocity = 0;
+          }
+          if (p.active) {
+            p.velocity += 0.0001;
+            p.y -= p.velocity;
+            pDummy.position.set(p.x, p.y, 0.05);
+            const s = 1 + p.velocity * 9;
+            pDummy.scale.set(1/s, s, 1/s);
+            if (p.y < 0) {
+              triggerSeepage(p.x, 0); 
+              p.active = false;
+              p.y = -10;
+              p.nextStart = t + 1000 + Math.random() * 3000;
+            }
+          } else {
+            pDummy.position.set(0, -10, 0);
+          }
+          pDummy.updateMatrix();
+          dripParticles.setMatrixAt(i, pDummy.matrix);
+        });
+        dripParticles.instanceMatrix.needsUpdate = true;
+
+        for (let i = seepageItems.length - 1; i >= 0; i--) {
+          const s = seepageItems[i];
+          if (s.phase === 'expanding') {
+            s.life += 0.07;
+            if (s.life >= 1) s.phase = 'diluting';
+          } else {
+            s.life -= 0.005; 
+          }
+          if (s.life <= 0) {
+            surfaceGroup.remove(s.mesh);
+            seepageItems.splice(i, 1);
+            continue;
+          }
+          const currentScale = (s.phase === 'expanding' ? s.life : 1 + (1 - s.life) * 0.5) * s.maxScale;
+          s.mesh.scale.set(currentScale, currentScale, 1);
+          s.mesh.material.opacity = Math.max(0, s.life * 0.7);
+          const wAt = Math.sin(s.x * 1.5 + t * 0.0004) * 0.006 + Math.cos(s.y * 1.3 + t * 0.0003) * 0.006 + Math.sin(t * 0.0002) * 0.012;
+          s.mesh.position.z = wAt + 0.001;
+        }
+
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+          const b = bubbles[i];
+          b.life -= b.decay;
+          b.mesh.position.x += b.vx;
+          b.mesh.position.y += b.vy;
+          
+          const waveAt = Math.sin(b.mesh.position.x * 1.5 + t * 0.0004) * 0.006 + Math.cos(b.mesh.position.y * 1.3 + t * 0.0003) * 0.006 + Math.sin(t * 0.0002) * 0.012;
+          b.mesh.position.z = waveAt + 0.02;
+          b.mesh.material.opacity = b.life;
+          
+          if (b.life <= 0) {
+            surfaceGroup.remove(b.mesh);
+            bubbles.splice(i, 1);
+          }
+        }
+      }
+      renderer.render(scene, camera);
+    }
+    
+    animate();
+
+    window.addEventListener('resize', () => {
+      w = window.innerWidth;
+      h = window.innerHeight;
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      pSize = getPlaneSize();
+      if (mesh) {
+        mesh.geometry.dispose();
+        mesh.geometry = new THREE.PlaneGeometry(pSize.width, pSize.height, 100, 100);
+      }
+    });
+  </script>
+</body>
+</html>

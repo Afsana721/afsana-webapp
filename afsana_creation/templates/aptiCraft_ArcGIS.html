@@ -1,0 +1,628 @@
+xxx<!DOCTYPE html>
+<html>
+<head>
+    <title>AptiCraft ArcGis_afsana</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://js.arcgis.com/4.29/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.29/"></script>
+    <style>
+        .infographic-bg { background-color: #2D2D2D; border: 1px solid #3D3D3D; }
+        .text-neon-green { color: #7ED957; }
+        .bg-neon-green { background-color: #7ED957; }
+        .dot-matrix { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+        .dot { width: 6px; height: 6px; border-radius: 1px; }
+        .dot-on { background-color: #7ED957; }
+        .dot-off { background-color: #444; }
+        
+        /* Stability Radar Specific Styles */
+        .radar-line { stroke: rgba(126, 217, 87, 0.1); stroke-width: 1; }
+        .radar-poly { transition: all 0.5s ease-out; }
+        .radar-glow { filter: drop-shadow(0 0 4px rgba(126, 217, 87, 0.6)); }
+    </style>
+</head>
+<body class="bg-emerald-50 text-slate-800 font-['Space_Grotesk'] scroll-smooth">
+
+<header class="w-full border-b border-emerald-200 bg-gradient-to-r from-green-100 via-emerald-100 to-lime-100 shadow-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+        <h1 class="text-2xl font-bold tracking-tight text-emerald-800">AptiCraft • Research-Grade Soil OS</h1>
+        <nav class="hidden md:flex space-x-8 text-sm font-semibold text-emerald-800">
+            <a href="#concept" class="hover:text-emerald-600 transition">Philosophy</a>
+            <a href="#map-hub" class="hover:text-emerald-600 transition">Live Map</a>
+            <a href="#analysis" class="hover:text-emerald-600 transition">Data Analysis</a>
+        </nav>
+    </div>
+</header>
+
+<section id="concept" class="max-w-7xl mx-auto px-6 py-12">
+    <div class="flex flex-col md:flex-row justify-between items-start gap-12">
+        <div class="max-w-2xl">
+            <h2 class="text-4xl font-bold text-emerald-800 tracking-tight">Primal Growth Protocol</h2>
+            <p class="text-slate-600 text-lg mt-4 leading-relaxed">
+                AptiCraft defines <span class="text-emerald-700 font-bold">Primal Growth</span> as the original biological baseline of a landscape. We utilize drone telemetry to bridge the delta between current soil exhaustion and indigenous equilibrium.
+            </p>
+        </div>
+        <div class="bg-emerald-100/50 border-l-4 border-emerald-500 p-6 rounded-r-lg">
+            <h3 class="text-xl font-bold text-emerald-900 italic">"Earth First, Data Always."</h3>
+        </div>
+    </div>
+</section>
+
+<div id="map-hub" class="w-full border-y border-emerald-200 shadow-inner bg-white relative">
+    <div id="viewDiv" class="w-full h-[110vh]"></div>
+
+    <div class="absolute top-4 right-4 bg-white/10 p-4 rounded-xl border border-emerald-200 shadow-xl z-10 w-72">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span class="text-[18px] font-bold uppercase tracking-tight text-[#E4D96F]">Telemetry Active</span>
+        </div>
+
+        <div class="space-y-2 text-sm font-semibold text-[#DDD06A] mb-4">
+            <div class="flex justify-between"><span>ALTITUDE</span> <span id="alt-val">1100m</span></div>
+            <div class="flex justify-between"><span>STANCE</span> <span class="text-emerald-600">LOCKED</span></div>
+            <div class="flex justify-between"><span>MODE</span> <span class="text-slate-800">FOLLOW</span></div>
+        </div>
+
+        <!-- Crop Region Control Panel -->
+        <div class="border-t border-white/20 pt-3">
+            <div class="text-[10px] text-white/60 uppercase mb-2">Crop Regions</div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button onclick="tilechanges('rice','best')" class="bg-white/20 hover:bg-white/30 rounded px-2 py-1">Rice Best</button>
+                <button onclick="tilechanges('rice','worst')" class="bg-white/20 hover:bg-white/30 rounded px-2 py-1">Rice Risk</button>
+
+                <button onclick="tilechanges('wheat','best')" class="bg-white/20 hover:bg-white/30 rounded px-2 py-1">Wheat Best</button>
+                <button onclick="tilechanges('wheat','worst')" class="bg-white/20 hover:bg-white/30 rounded px-2 py-1">Wheat Risk</button>
+
+                <button onclick="tilechanges('corn','best')" class="bg-white/20 hover:bg-white/30 rounded px-2 py-1">Corn Best</button>
+                <button onclick="tilechanges('corn','worst')" class="bg-white/20 hover:bg-white/30 rounded px-2 py-1">Corn Risk</button>
+
+                <button onclick="tilechanges('soybean','best')" class="bg-white/20 hover:bg-white/30 rounded px-2 py-1">Soy Best</button>
+                <button onclick="tilechanges('soybean','worst')" class="bg-white/20 hover:bg-white/30 rounded px-2 py-1">Soy Risk</button>
+            </div>
+
+            <div class="mt-3 text-[10px] text-white/60">
+                Data source → <a href="#analysis" class="text-emerald-300 underline">research table</a>
+            </div>
+        </div>
+    </div>
+
+<section id="analysis" class="max-w-[105rem] mx-auto px-6 py-16">
+    <div class="grid md:grid-cols-2 gap-10">
+        <div class="bg-white border border-emerald-200 rounded-2xl p-8 shadow-sm">
+            <h3 class="text-2xl font-bold text-emerald-800 uppercase tracking-tight mb-4">Geo-Solid Stability</h3>
+            <p class="text-slate-600 text-sm leading-relaxed mb-6">
+                Analyze structural terrain integrity using topographic variance. Identify soil density shifts via thermal sync to restore geological pillars.
+            </p>
+        </div>
+        <div class="bg-white border border-emerald-200 rounded-2xl p-8 shadow-sm">
+            <h3 class="text-2xl font-bold text-emerald-800 uppercase tracking-tight mb-4">Native Life Guard</h3>
+            <p class="text-slate-600 text-sm leading-relaxed mb-6">
+                Environmental balancing ensures that crop improvement does not displace indigenous flora.
+            </p>
+        </div>
+    </div>
+
+    <!-- RESEARCH VISUALIZATION SECTION -->
+    <div class="mt-12 bg-[#2d6a4f] rounded-3xl p-8 shadow-2xl shadow-[#bfd200] border border-[#bfd200]">
+        <div class="flex justify-between items-center mb-8 border-b border-slate-800 pb-4">
+            <div>
+                <h3 class="text-emerald-400 font-bold text-xl uppercase tracking-widest">Research Comparison Matrix</h3>
+                <p class="text-slate-500 text-xs mt-1">Live Telemetry Analysis & Growth Variance</p>
+            </div>
+            <div class="text-right">
+                <span id="live-loc-tag" class="text-[10px] font-mono text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full uppercase">GPS Syncing...</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="infographic-bg p-4 rounded min-h-[220px] flex flex-col justify-center items-center relative">
+                <span class="absolute top-2 left-2 text-[8px] text-gray-400 uppercase">Core Data Index</span>
+                <div class="relative w-32 h-32 flex items-center justify-center">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="none" stroke="#7ED957" stroke-width="2"/>
+                        <text x="50" y="55" text-anchor="middle" fill="white" font-size="20" font-weight="bold" id="main-metric">2621</text>
+                    </svg>
+                </div>
+                <div class="mt-2 text-right w-full">
+                    <div class="text-neon-green font-bold text-lg">1853</div>
+                    <div class="text-white opacity-50 text-sm">786 Units</div>
+                </div>
+            </div>
+
+            <div class="infographic-bg p-4 rounded min-h-[220px] lg:col-span-2">
+                <span class="text-[8px] text-gray-400 uppercase">Crop Trend index 1940-2025</span>
+                <div class="mt-2 h-40">
+                    <svg viewBox="0 0 400 150" class="w-full h-full">
+                        <line x1="0" y1="130" x2="400" y2="130" stroke="#444" stroke-width="1"/>
+                        <line x1="0" y1="100" x2="400" y2="100" stroke="#333" stroke-width="1"/>
+                        <line x1="0" y1="70" x2="400" y2="70" stroke="#333" stroke-width="1"/>
+                        <line x1="0" y1="40" x2="400" y2="40" stroke="#333" stroke-width="1"/>
+                        
+                        <path id="wheat-path" d="M10 100 L40 80 L80 110 L120 70 L160 90 L200 60 L240 100 L280 120 L320 90 L360 110 L390 120" fill="none" stroke="#7ED957" stroke-width="2"/>
+                        <path id="corn-path" d="M10 120 L40 100 L80 120 L120 90 L160 110 L200 80 L240 120 L280 130 L320 110 L360 125 L390 130" fill="none" stroke="#FACC15" stroke-width="2"/>
+                        <path id="soy-path" d="M10 80 L40 60 L80 90 L120 50 L160 70 L200 40 L240 80 L280 100 L320 70 L360 90 L390 100" fill="none" stroke="#60A5FA" stroke-width="2"/>
+                        <path id="rice-path" d="M10 110 L40 90 L80 105 L120 80 L160 95 L200 70 L240 110 L280 115 L320 100 L360 108 L390 118" fill="none" stroke="#F472B6" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="flex gap-4 mt-2 justify-center">
+                    <div class="flex items-center gap-1"><div class="w-2 h-2 bg-neon-green"></div><span class="text-[8px] text-white">Wheat</span></div>
+                    <div class="flex items-center gap-1"><div class="w-2 h-2 bg-yellow-400"></div><span class="text-[8px] text-white">Corn</span></div>
+                    <div class="flex items-center gap-1"><div class="w-2 h-2 bg-blue-400"></div><span class="text-[8px] text-white">Soybeans</span></div>
+                    <div class="flex items-center gap-1"><div class="w-2 h-2 bg-pink-400"></div><span class="text-[8px] text-white">Rice</span></div>
+                </div>
+            </div>
+
+            <div class="infographic-bg p-4 rounded min-h-[220px]">
+                <span class="text-[8px] text-gray-400 uppercase">Yield Density</span>
+                <div class="flex justify-between items-end mb-4">
+                    <div class="text-3xl font-bold text-white">56<span class="text-lg opacity-50">%</span></div>
+                    <div class="text-xl font-bold text-white opacity-50">34<span class="text-sm opacity-50">%</span></div>
+                </div>
+                <div class="dot-matrix" id="dot-matrix-container"></div>
+            </div>
+
+            <!-- FIXED STABILITY RADAR SECTION -->
+            <div class="infographic-bg p-4 rounded min-h-[220px] flex flex-col items-center">
+                <span class="text-[8px] text-gray-400 uppercase self-start mb-2">Stability Radar (Live)</span>
+                <div class="w-36 h-36 relative">
+                    <svg viewBox="0 0 100 100" class="w-full h-full overflow-visible radar-glow">
+                        <!-- Background Circles -->
+                        <circle cx="50" cy="50" r="45" fill="none" class="radar-line" />
+                        <circle cx="50" cy="50" r="30" fill="none" class="radar-line" />
+                        <circle cx="50" cy="50" r="15" fill="none" class="radar-line" />
+                        
+                        <!-- Axis Lines -->
+                        <line x1="50" y1="5" x2="50" y2="95" class="radar-line" />
+                        <line x1="5" y1="50" x2="95" y2="50" class="radar-line" />
+                        <line x1="18" y1="18" x2="82" y2="82" class="radar-line" />
+                        <line x1="18" y1="82" x2="82" y2="18" class="radar-line" />
+
+                        <!-- Dynamic Radar Shape -->
+                        <path id="radar-shape" 
+                              d="M50 20 L80 50 L50 80 L20 50 Z" 
+                              fill="rgba(126, 217, 87, 0.25)" 
+                              stroke="#7ED957" 
+                              stroke-width="1.5" 
+                              class="radar-poly" />
+                    </svg>
+                </div>
+                <div class="grid grid-cols-2 w-full mt-4 gap-2">
+                    <div class="text-center">
+                        <div class="text-[10px] text-gray-500 uppercase">Signal</div>
+                        <div id="radar-pct-ok" class="text-neon-green text-xs font-bold">98% OK</div>
+                    </div>
+                    <div class="text-center border-l border-slate-700">
+                        <div class="text-[10px] text-gray-500 uppercase">Interference</div>
+                        <div id="radar-pct-err" class="text-white opacity-40 text-xs font-bold">2.4% ERR</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="infographic-bg p-4 rounded min-h-[190px] lg:col-span-4 overflow-hidden mt-4">
+                 <div class="flex items-center justify-between gap-3 mb-3">
+                    <span class="text-[8px] text-gray-400 uppercase">Live Drone Telemetry Log</span>
+                    <div id="telemetry-region-badge" class="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">🌾 Rice • Best</div>
+                 </div>
+                 <div class="grid md:grid-cols-[220px_1fr] gap-4 items-start">
+                    <div class="bg-black/20 rounded-xl border border-slate-800 p-3">
+                        <div class="text-[10px] text-slate-500 uppercase mb-2">Current Crop Signal</div>
+                        <div id="telemetry-crop-summary" class="text-sm text-white leading-6">
+                            🌾 Rice selected • waiting for live region packet...
+                        </div>
+                    </div>
+                    <div class="mt-0 font-mono text-[10px] space-y-1 text-neon-green opacity-80" id="log-feed">
+                        <div>[00:00:01] INITIALIZING DRONE LINK...</div>
+                    </div>
+                 </div>
+            </div>
+        </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer class="mt-16 bg-gradient-to-r from-emerald-100 via-lime-100 to-green-100 border-t border-emerald-200">
+    <div class="max-w-7xl mx-auto px-6 py-10 text-center">
+        <h3 class="text-xl font-bold text-emerald-800 tracking-wide mb-2">AptiCraft</h3>
+        <p class="text-sm text-emerald-700 mb-6">Geo‑Intelligence • Soil Systems • Environmental Data Research</p>
+        
+        <div class="flex justify-center gap-8 text-sm font-semibold text-emerald-800">
+            <a href="https://www.linkedin.com" target="_blank" class="hover:text-emerald-600 transition">LinkedIn</a>
+            <a href="https://github.com" target="_blank" class="hover:text-emerald-600 transition">GitHub</a>
+            <a href="#" class="hover:text-emerald-600 transition">Portfolio</a>
+        </div>
+
+        <div class="mt-6 text-xs text-emerald-700">
+            © 2024 AptiCraft Research Systems
+        </div>
+    </div>
+</footer>
+
+<script>
+require(["esri/config", 
+    "esri/Map",
+    "esri/views/SceneView",
+    "esri/Graphic",
+    "esri/layers/GraphicsLayer",
+    "esri/geometry/Point",
+    "esri/geometry/SpatialReference"
+], function(esriConfig, Map, SceneView, Graphic, GraphicsLayer, Point, SpatialReference) {
+
+  //create a variable for ArcGis crops location data access api key 
+  const cropApi = "AAPTaJhcuzO8Cgaqiqfh5IBLLBA..ZW8TgCCJOFRc3R9sdt2ZEHEMrgneg0oyCh65NqIOTdAVMaPuo-JIclCDxgSZ-T43uaZKpqB0QJ1WFuxDMJt7OLxhzmG7PCb0qi_fylGwuzPNAMP8PAUTxL6f1tmlKaivpXq59QB1rg-l0dnVsTCl9zFSEh0UP8oBPhvNIK8_kNy1tDu2rgfWuuvtADQUke1qIXmPp6nsfCyW8luW95XEynBlvtYlqQRwd7zOGK3xkITfKPw2CpVNKqoJwq6rSKeSnhN7TA..AT1_X1hUW6q4";
+
+  // connect ArcGIS services with the API key so basemap/tiles can load
+  esriConfig.apiKey = cropApi;
+
+  // Fetch live crop/tile research data for the selected region.
+  // Later this can call your real ArcGIS layer / FeatureServer / API.
+  // Right now it returns a structured object so the rest of the UI can stay organized.
+  const fetchTiles_data = async function(region, crop, type) {
+    if(!region) return null;
+
+    // Example request placeholder:
+    // const res = await fetch(`YOUR_API_URL?crop=${crop}&type=${type}&lat=${region.lat}&lon=${region.lon}`);
+    // const data = await res.json();
+
+    // Temporary structured data based on the selected region
+    const data = {
+      regionName: region.name,
+      crop,
+      type,
+      lat: region.lat,
+      lon: region.lon,
+      humidity: Math.round(55 + (Math.abs(region.lat) % 20)),
+      moisture: Math.round(40 + (Math.abs(region.lon) % 15)),
+      dryness: +(0.15 + ((Math.abs(region.lon) + Math.abs(region.lat)) % 20) / 100).toFixed(2),
+      source: region.tiles?.[0] || ""
+    };
+
+    return data;
+  };
+  
+  // Crop region library:
+  // Each crop keeps two groups:
+  // 1) best   = locations where growing conditions are stronger
+  // 2) worst  = locations where drought / heat / stress makes research comparison useful
+  // Each region object stores:
+  // - name : human-readable place name
+  // - lat / lon : map location
+  // - tiles : imagery source for that area
+  const cropRegions = {
+  // crop research data connected to map regions
+
+              rice:{
+                best:[
+                  {name:"Arkansas Delta",lat:34.799,lon:-91.199,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]},
+                  {name:"Louisiana Rice Belt",lat:30.2266,lon:-92.0198,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                ],
+                worst:[
+                  {name:"South Texas Drought Zone",lat:26.2034,lon:-98.2300,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                ]
+              },
+              wheat:{
+                best:[
+                  {name:"Kansas Wheat Belt",lat:39.0119,lon:-98.4842,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                ],
+                worst:[
+                  {name:"South Texas Heat Zone",lat:27.8006,lon:-97.3964,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                ]
+              },
+              corn:{
+                best:[
+                  {name:"Iowa Corn Belt",lat:42.0329,lon:-93.5815,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                ],
+                worst:[
+                  {name:"West Texas Dryland",lat:33.5779,lon:-101.8552,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                ]
+              },
+              soybean:{
+                best:[
+                  {name:"Illinois Soy Region",lat:40.6331,lon:-89.3985,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                ],
+                worst:[
+                  {name:"South Texas Drought",lat:26.2034,lon:-98.2300,tiles:["https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"]}
+                ]
+              }
+            };
+
+    // Convert the selected map region into business-style research values.
+    // For now this derives values from the region location itself,
+    // so the table/panel reacts to the map choice.
+    // Later this can be replaced by real API / database / tile analytics.
+    function getRegionResearch(region){
+        // simple derived metrics from location (placeholder for real API later)
+        const climateScore = Math.max(60, 100 - Math.abs(region.lat));
+        const soilScore = Math.max(65, 100 - Math.abs(region.lon % 50));
+        return {
+            yield: Math.round((climateScore + soilScore) / 2),
+            stability: Math.round((climateScore * 0.6 + soilScore * 0.4))
+        };
+    }
+
+    // Update the high-level KPI panel when a user changes region.
+    // This keeps the main metric and radar summary linked to the current map location.
+    function updateResearchDataFromRegion(region, fetchedData){
+        const d = fetchedData || getRegionResearch(region);
+        const metric=document.getElementById("main-metric");
+        if(metric) metric.textContent = Math.round(2500 + (d.yield || d.humidity || 0));
+
+        const ok=document.getElementById("radar-pct-ok");
+        if(ok) ok.textContent = `${Math.max(60, Math.min(99, d.stability || (100 - ((d.dryness || 0) * 100))))}% OK`;
+    }
+
+    // Update crop-specific numbers in the comparison table and telemetry area.
+    // This now keeps the telemetry panel human-readable:
+    // - shows crop emoji + crop name
+    // - shows region name
+    // - shows whether user selected best or worst zone
+    // - keeps the live log focused on the current crop instead of random mixed text
+    function updateCropData(region, crop, type, fetchedData){
+        if(!region || !crop) return;
+
+        // use fetched region data first; fallback to derived research only if needed
+        const d = fetchedData || getRegionResearch(region);
+        const riskFactor = type === "worst" ? 0.72 : 1;
+        const hum = Math.round((d.humidity || (d.stability * 0.72)) * riskFactor);
+        const moist = Math.round((d.moisture || (d.stability * 0.58)) * riskFactor);
+        const dry = +(d.dryness ?? Math.max(0.12, +(1 - ((d.stability || 80) / 100)).toFixed(2)));
+
+        const humVal = document.getElementById("main-metric");
+        if(humVal) humVal.textContent = Math.round(2500 + (d.yield || hum));
+
+        const ok = document.getElementById("radar-pct-ok");
+        if(ok) ok.textContent = `${Math.max(60, Math.min(99, d.stability || (100 - dry * 100)))}% OK`;
+
+        const err = document.getElementById("radar-pct-err");
+        if(err) err.textContent = (100 - Math.max(60, Math.min(99, d.stability || (100 - dry * 100)))).toFixed(1) + "% ERR";
+
+        const cropMap = {
+          rice: { humMul: 1.0, moistMul: 1.0 },
+          wheat: { humMul: 0.84, moistMul: 0.82 },
+          corn: { humMul: 0.9, moistMul: 0.88 },
+          soybean: { humMul: 0.94, moistMul: 0.9 }
+        };
+        const m = cropMap[crop] || cropMap.rice;
+
+        const riceEl = document.getElementById("table-rice-live");
+        const cornEl = document.getElementById("table-corn-live");
+        const potatoEl = document.getElementById("table-potato-live");
+
+        if(riceEl) riceEl.textContent = `${Math.round(hum * m.humMul)}% / ${Math.round(moist * m.moistMul)}%`;
+        if(cornEl) cornEl.textContent = `${Math.round(hum * 0.88)}% / ${Math.round(moist * 0.86)}%`;
+        if(potatoEl) potatoEl.textContent = `${Math.round(hum * 0.92)}% / ${Math.round(moist * 0.9)}%`;
+
+                const cropEmojiMap = {
+          rice: "🌾",
+          wheat: "🌿",
+          corn: "🌽",
+          soybean: "🫘"
+        };
+        const cropLabelMap = {
+          rice: "Rice",
+          wheat: "Wheat",
+          corn: "Corn",
+          soybean: "Soybean"
+        };
+        const cropEmoji = cropEmojiMap[crop] || "🌱";
+        const cropLabel = cropLabelMap[crop] || crop;
+
+        // Update the telemetry badge so the selected crop is always visible at the top.
+        const telemetryBadge = document.getElementById("telemetry-region-badge");
+        if(telemetryBadge) telemetryBadge.textContent = `${cropEmoji} ${cropLabel} • ${type === "worst" ? "Risk" : "Best"}`;
+
+        // Update the summary card so user can instantly see which area and why it matters.
+        const telemetrySummary = document.getElementById("telemetry-crop-summary");
+        if(telemetrySummary){
+          telemetrySummary.innerHTML = `
+            <div><span class="text-emerald-400">${cropEmoji} ${cropLabel}</span> selected for <span class="text-white">${region.name}</span>.</div>
+            <div class="text-slate-400 text-xs mt-1">Zone: ${type === "worst" ? "Risk / stress area" : "Best growth area"}</div>
+            <div class="text-slate-400 text-xs">Humidity ${hum}% • Moisture ${moist}% • Dryness ${dry}</div>
+          `;
+        }
+
+        // Add one clean crop-aware log entry each time region data changes.
+        const logFeed = document.getElementById("log-feed");
+        if(logFeed){
+          const entry = document.createElement("div");
+          entry.textContent = `[REGION] ${cropEmoji} ${cropLabel} • ${type.toUpperCase()} • ${region.name} • LAT ${region.lat.toFixed(4)} LON ${region.lon.toFixed(4)} • HUM ${hum}% • MOIST ${moist}% • DRY ${dry}`;
+          logFeed.prepend(entry);
+          if(logFeed.children.length > 6) logFeed.lastChild.remove();
+        }
+    }
+
+    // Handle right-panel crop clicks.
+    // This does 4 jobs in one place:
+    // 1) find the selected region object
+    // 2) move the map to that region
+    // 3) place a marker on that region
+    // 4) refresh research cards + crop table using that region data
+    // expose globally so HTML buttons can call it
+    window.tilechanges = async function(crop,type,index=0){
+        // crop = rice/wheat/corn/soybean
+        // type = best or worst
+        const region = cropRegions[crop][type][index];
+        if(!region) return;
+
+        // get the latest data object for the selected region first
+        const fetchedData = await fetchTiles_data(region, crop, type);
+
+        // Move the ArcGIS view to the selected crop research region
+        view.goTo({ center: [region.lon, region.lat], zoom: 10 }, { duration: 2000 }).catch(() => {});
+     
+        gLayer.removeAll();
+        gLayer.add(droneGraphic); 
+        gLayer.add(new Graphic({
+          geometry: new Point({ longitude: region.lon, latitude: region.lat, z: posZ }),
+          symbol: {
+            type: "simple-marker",
+            color: [255, 59, 48, 0.95],
+            size: 10,
+            outline: { color: [255,255,255,0.9], width: 1.5 }
+          }
+        })); 
+
+        // Keep live telemetry coordinates synced with the newly selected region
+        posX = region.lon;
+        posY = region.lat;
+
+        // Refresh research UI from the selected region + fetched data object
+        updateResearchDataFromRegion(region, fetchedData);
+        updateCropData(region, crop, type, fetchedData);
+    }
+
+    const center = { lat: 35.3186, lon: -87.7735 };
+    const droneUrl = "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/model-1766547783114.glb";
+
+    let posX = center.lon;
+    let posY = center.lat;
+    let posZ = 1100;
+    let rotation = 0;
+
+    const map = new Map({ basemap: "satellite", ground: "world-elevation" });
+    const view = new SceneView({
+        container: "viewDiv",
+        map: map,
+        qualityProfile: "high",
+        alphaCompositingEnabled: true,
+        environment: {
+            atmosphere: { quality: "high" },
+            starsEnabled: false
+        },
+        camera: { position: [posX, posY - 0.0013, posZ + 800], heading: 0, tilt: 60 }
+    });
+
+    const gLayer = new GraphicsLayer({ elevationInfo: { mode: "absolute-height" } });
+    map.add(gLayer);
+
+    const droneGraphic = new Graphic({
+        geometry: new Point({ longitude: posX, latitude: posY, z: posZ }),
+        elevationInfo: { mode: "absolute-height" },
+        symbol: {
+            type: "point-3d",
+            symbolLayers: [{
+                type: "object",
+                resource: { href: droneUrl },
+                height: 400,
+                heading: 0
+            }]
+        }
+    });
+    gLayer.add(droneGraphic);
+
+    const dotContainer = document.getElementById('dot-matrix-container');
+    if(dotContainer) {
+        dotContainer.innerHTML = "";
+        for(let i=0; i<48; i++) {
+            const dot = document.createElement('div');
+            dot.className = `dot ${i < 24 ? 'dot-on' : 'dot-off'}`;
+            dotContainer.appendChild(dot);
+        }
+    }
+
+    function updateInfographics(frame) {
+        // Animate the crop trend lines so each crop feels like its own signal
+        const wheat=document.getElementById('wheat-path');
+        const corn=document.getElementById('corn-path');
+        const soy=document.getElementById('soy-path');
+        const rice=document.getElementById('rice-path');
+
+        if(wheat) wheat.setAttribute('transform',`translate(${Math.sin(frame*0.02)*4},${Math.cos(frame*0.015)*2})`);
+        if(corn) corn.setAttribute('transform',`translate(${Math.cos(frame*0.018)*3},${Math.sin(frame*0.02)*2})`);
+        if(soy) soy.setAttribute('transform',`translate(${Math.sin(frame*0.025)*5},${Math.cos(frame*0.02)*3})`);
+        if(rice) rice.setAttribute('transform',`translate(${Math.cos(frame*0.022)*4},${Math.sin(frame*0.018)*2})`);
+        const mainMetric = document.getElementById('main-metric');
+        if(mainMetric) mainMetric.textContent = Math.floor(2600 + Math.sin(frame * 0.05) * 50);
+
+        // Updated Radar Animation Logic
+        const radar = document.getElementById('radar-shape');
+        if(radar) {
+            const f = frame * 0.05;
+            const p1 = 50 + Math.sin(f) * 30; // Top
+            const p2 = 50 + Math.cos(f * 0.8) * 35; // Right
+            const p3 = 50 + Math.sin(f * 1.2) * 25; // Bottom
+            const p4 = 50 + Math.cos(f * 1.5) * 30; // Left
+            
+            // Generate a 6-point radar polygon for better visualization
+            const points = `50,${50-p1/2} ${50+p2/2},${50-p2/4} ${50+p2/2},${50+p3/4} 50,${50+p3/2} ${50-p4/2},${50+p3/4} ${50-p4/2},${50-p1/4} Z`;
+            radar.setAttribute('d', `M${points}`);
+            
+            if(frame % 30 === 0) {
+                document.getElementById('radar-pct-ok').textContent = (96 + Math.random() * 3).toFixed(1) + "% OK";
+                document.getElementById('radar-pct-err').textContent = (1 + Math.random() * 2).toFixed(2) + "% ERR";
+            }
+        }
+
+                if(frame % 60 === 0) {
+            const feed = document.getElementById('log-feed');
+            const badge = document.getElementById('telemetry-region-badge');
+            if(feed) {
+                // Keep the live telemetry updates tied to the current selected crop badge.
+                const activeLabel = badge ? badge.textContent : '🌱 Crop • Active';
+                const entry = document.createElement('div');
+                entry.textContent = `[LIVE] ${activeLabel} • LAT ${posY.toFixed(4)} LON ${posX.toFixed(4)} • ALT ${posZ}m • HDG ${Math.round(rotation % 360)}°`;
+                feed.prepend(entry);
+                if(feed.children.length > 6) feed.lastChild.remove();
+            }
+        }
+
+        const locTag = document.getElementById('live-loc-tag');
+        if(locTag) locTag.innerText = `LAT ${posY.toFixed(5)} LON ${posX.toFixed(5)}`;
+        
+        const altVal = document.getElementById('alt-val');
+        if(altVal) altVal.innerText = Math.round(posZ) + "m";
+    }
+
+    function startAnimation() {
+        let frameCounter = 0;
+
+        // launch centered
+        view.goTo({ target: droneGraphic.geometry, tilt:60, heading:0 }, { animate:false });
+
+        function frame() {
+            if (!droneGraphic) return;
+
+            // DRONE movement (slow)
+            posX += 0.000003;
+            posY += 0.000002;
+            droneGraphic.geometry = new Point({ longitude: posX, latitude: posY, z: posZ });
+
+            // slow rotation
+            rotation += 0.15;
+            const newSymbol = droneGraphic.symbol.clone();
+            if(newSymbol.symbolLayers && newSymbol.symbolLayers.items[0]){
+                newSymbol.symbolLayers.items[0].heading = rotation % 360;
+            }
+            droneGraphic.symbol = newSymbol;
+
+            // CAMERA follow (slower than drone)
+            if (!view.interacting && frameCounter % 90 === 0) {
+                view.goTo({ target: droneGraphic.geometry, tilt:60 }, { duration:2500, easing:"linear" }).catch(()=>{});
+            }
+
+            updateInfographics(frameCounter++);
+            requestAnimationFrame(frame);
+        }
+
+        requestAnimationFrame(frame);
+    }
+
+    view.when(() => {
+        // Safely handle attribution so preview does not fail if the widget is not ready.
+        const attributionNode = view.ui.find("attribution");
+        if (attributionNode) {
+            try { view.ui.remove("attribution"); } catch (e) { console.warn("Attribution remove skipped", e); }
+        }
+        //setTimeout(startAnimation, 1000);
+        setTimeout(() => tilechanges('rice','best'), 1200);
+    }).catch((e) => {
+        console.error("SceneView init error", e);
+    });
+});
+</script>
+</body>
+</html>

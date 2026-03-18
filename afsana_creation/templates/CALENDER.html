@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 AptiCraft Calendar & Task Planner</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Load Three.js for 3D graphics (kept for completeness, though not actively used here) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        /* Global Styles and Theme */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        :root {
+            /* Palatte Variables */
+            --primary-dark: #fed811; /* Brown/Muted Gold for Text, Borders */
+            --primary-light: #f1ddb7; /* Light Gold/Highlight for Today, Accents */
+            --secondary-accent: #d0b5b5; /* Muted Pink for News/Soft Tones */
+            --neutral-bg: #f8f4f4; /* Near White (Main background for panels) */
+            --neutral-soft: #eee4e4; /* Soft White/Light Pink (Page background) */
+            --nav-text: #83404c; /* Existing dark red/brown for contrast */
+            --calendar-text-light: #F4931D; /* Bright accent for header text */
+            --light-yellow-gold: #f0e2a8; /* Used for animation glow */
+            
+            /* --- USER-SPECIFIED COLORS --- */
+            --user-golden: #fff68f; /* User specified golden color */
+            --snow-white: #ffffff; /* User specified snow white color */
+            --task-detail-bg: #fff8e8; /* Light background for expanded details */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
+            font-family: 'Inter', Arial, sans-serif;
+        }
+
+        /* --- FULL PAGE GRADIENT --- */
+        body {
+            /*background: linear-gradient(135deg, #fcd059, #eee4e4, #fff4cc);*/
+            background: #ffffff; 
+            background-attachment: fixed;
+        }
+
+        /* Header and Three.js Canvas */
+        header {
+            width: 100%;
+            height: 600px; 
+            position: relative;
+            overflow: hidden;
+        }
+
+        #threejs-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; 
+            opacity: 0.3; 
+            pointer-events: none; 
+        }
+
+        /* --- Navigation --- */
+        nav {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            background:	#ffffff; 
+            padding: 16px 0;
+        }
+        nav a {
+            color: #c58177;
+            text-decoration: none;
+            transition: color 0.2s;
+            font-size: larger;
+            font-family:'Oswald', sans-serif;
+        }
+        nav a:hover {
+            color:#ffbf00;
+
+            text-shadow: 0 0 5px rgba(199, 185, 164, 0.5);
+        }
+
+        /* --- Main Layout: Two Columns (Task List Left, Calendar Right) --- */
+        #calendar-container-wrapper {
+            width: 100%;
+            /* Use flex for better alignment control, especially the gap/raw alignment */
+            display: flex; 
+            flex-direction: column; /* Default stack on mobile */
+            gap: 3rem; /* Increased gap for separation */
+            justify-content: center;
+            align-items: flex-start; /* Align contents to start */
+            margin-bottom: 2.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            #calendar-container-wrapper {
+                flex-direction: row; /* Side-by-side on desktop */
+                gap: 2rem;
+                justify-content: space-between; /* Space them out */
+            }
+            /* Fixed width for Task List, Flexible for Calendar */
+            #upcoming-panel { flex: 0 0 580px; } /* Set width for task panel */
+            #calendar-column { flex: 1 1 700px; max-width: 820px; }
+        }
+
+        /* Task List Panel Styling */
+        #upcoming-panel { 
+            background:#FEFEF4; 
+            border-radius:1rem; 
+            padding:1rem; 
+            box-shadow:0 10px 25px #FFEFD5;
+        }
+
+        /* Calendar Panel Styling */
+        #calendar-column { 
+            background:#FFFDD0; 
+            backdrop-filter:blur(2px); 
+            border-radius:1rem; 
+            box-shadow:0 10px 25px #FFEFD5; 
+            overflow:hidden;
+        }
+
+        /* Task Item and Expand/Collapse Styles */
+        .task-item {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+        .task-header:hover {
+            background-color: var(--primary-light);
+            border-radius: 0.5rem;
+        }
+        
+        .task-details {
+            /* This property is crucial for the transition effect */
+            transition: max-height 0.3s ease-in-out, padding-top 0.3s ease-in-out, opacity 0.2s;
+            overflow: hidden;
+            max-height: 0; /* Default collapsed state */
+            opacity: 0;
+            padding-top: 0;
+        }
+        
+        .task-header[data-expanded="true"] + .task-details {
+            max-height: 500px; /* Increased arbitrary large height for expansion */
+            padding-top: 1rem;
+            opacity: 1;
+        }
+
+        .task-header[data-expanded="true"] .expand-btn i {
+            transform: rotate(180deg);
+        }
+
+        /* Calendar Styles (Modified for uniform background) */
+        #calendar-background {
+            background-size: cover;
+            background-position: center;
+            padding: 0.75rem; 
+            color: #f0d478; 
+            position: relative;
+            box-shadow: inset 0 0 150px #ebe6b8; 
+            border-radius: 1rem; 
+            transition: background-image 0.5s ease-in-out; 
+            min-height: 450px; 
+            
+        }
+        
+        #calendar-grid-wrapper {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px; 
+        }
+
+        .day-label {
+            padding: 0.5rem 0 0.2rem 0; 
+            text-align: center;
+            font-weight: 600; 
+            transition: background-color 0.15s;
+        }
+        
+        .date-cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+            text-align: center;
+            font-weight:normal;
+            border-radius: 0.25rem;
+            transition: all 0.2s;
+            font-size: 2.50rem;
+            border: 2px solid #ffd400; /* silver border */
+            color: #f5c72f; /* gold digits */
+            font-family: Apple Color Emoji;
+            background-color: #f3e495;
+        }
+
+        /* --- UNIFORM CELL STYLING --- */
+        .date-cell:not(.empty-cell) {
+            /* All active dates share this background */
+            background-color: rgba(255, 255, 255, 0.4); 
+            backdrop-filter: blur(2px); 
+        }
+        /* Hover effect still provides interactivity feedback */
+        .date-cell:not(.empty-cell):hover {
+            background-color: rgba(255, 255, 255, 0.7);
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+        
+        /* --- CURRENT DATE HIGHLIGHT ONLY --- */
+        .date-cell.today {
+            background-color: #ffd60a; /* Bold gold background */
+            color: white; /* White digits for contrast */
+            font-weight: 800;
+            box-shadow: 0 0 10px rgba(236, 220, 191, 0.8), inset 0 0 10px #bf8a04;
+            border-color: #fdcb11;
+        }
+        
+        /* Styling for the actively selected date (User click) */
+        .date-cell.selected-date {
+            outline: 3px solid var(--primary-dark);
+            outline-offset: -3px;
+            background-color: rgba(255,246,143, 0.9); 
+            color: var(--primary-dark);
+        }
+        
+        /* Temporary Notification Box Styling */
+        #notification-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 50;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            color: #8b4513;
+            background-color: #fff1ae;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: translateY(-50px);
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+        }
+        #notification-box.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Weather Widget Custom Styling */
+        #location-label {
+            -webkit-text-stroke: 0.5px #fcd059;
+            text-shadow: 0 0 5px rgba(255, 246, 143, 0.5);
+        }
+
+        /* News Card Styling */
+        .news-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .news-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        @layer base {
+        .text-stroke-gold {
+            -webkit-text-stroke: 1px #88837a; /* Golden outline */
+        }
+        }
+
+           .apticraft-text {
+            font-family: 'Cinzel', serif; 
+            font-size: 2.5em; /* Smaller size */
+            font-weight: 100;
+            color: #660000; /* Snow White Face */
+            text-transform: uppercase;
+            letter-spacing: -0.20em; 
+            
+            /* Shortened and simplified 3D stack */
+            text-shadow: 
+                1px 1px 0px #C08081,
+                2px 2px 0px #841617,
+                3px 3px 0px #FFD800,
+                /* Subtle Dark Red Drop Shadow */
+                4px 8px 8px rgba(31, 30, 24, 0.4),
+                6px 12px 12px rgba(139, 0, 0, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .apticraft-text {
+                font-size: 1.5em; /* Mobile size */
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="relative w-full">
+        <!-- Three.js Canvas for subtle background animation -->
+        <canvas id="threejs-canvas"></canvas>
+        
+        <img src="{{ url_for('static', filename='time3.jpg') }}" alt="future in image"
+            class="absolute inset-0 w-full h-[600px] object-cover z-0">
+        
+        <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
+            <div class="h-22 w-22 flex items-center justify-center">
+                <img src="{{ url_for('static', filename='aptiCraft.png') }}" alt="AptiCraft Logo" class="h-22 w-22 object-contain" />
+            </div>
+
+           <span class="apticraft-text" class="text-3xl text-[#FFD700] tracking-tight drop-shadow-[0_0_2px_#ffbf00] font-serif font-normal text-stroke-gold">
+            AptiCraft
+            </span>
+
+        </div>
+    </header>
+    
+    <nav class="bg-[--primary-light] w-full py-3 text-[24px] font-thin  border-t-2 border-b-2 border-[#fcbe14] flex justify-center gap-8 shadow-md sticky top-0 z-20">
+        <a href="{{ url_for('calendar') }}" class="hover:text-[#bf8a04] text-[#b45f06] font-normal tracking-wide transition">Home</a>
+        <a href="{{ url_for('register') }}" class="hover:text-[#bf8a04] text-[#b45f06] font-normal tracking-wide transition">Register</a>
+        <a href="{{ url_for('login') }}" target="_blank" class="hover:text-[#bf8a04] text-[#b45f06] font-normal tracking-wide transition">Login</a>
+        <a href="{{ url_for('logout') }}" target="_blank" class="hover:text-[#bf8a04] text-[#b45f06] font-normal tracking-wide transition">Logout</a>
+    </nav>
+
+    <main class="bg-[#ffffff] min-h-[800px] py-2 flex flex-col items-center px-4 lg:px-8">
+        <!-- User Greeting Section -->
+        <section class="self-start pl-8 pt-10 animate-fadeIn">
+        <div class="inline-block px-8 py-4 rounded-2xl bg-white/60 shadow-lg border border-[#f7d488] backdrop-blur-sm transition-all duration-500 hover:scale-[1.03]">
+            <p class="text-4xl font-serif tracking-wide text-[#7a4a00] font-[Poppins]"
+                style=" -webkit-text-stroke: 0.5px #fdf46c; text-shadow: 0 0 5px rgba(143, 150, 129, 0.5);">
+            Welcome 
+            <span class="text-[#d68129] font-semibold drop-shadow-sm transition-all duration-300">{{ session.get('name', 'Guest') }}</span>
+            ✨
+            </p>
+        </div>
+        </section>
+
+        <!-- Tailwind Custom Animations -->
+        <style>
+        @keyframes fadeIn { from { opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
+        .animate-fadeIn { animation: fadeIn 0.8s ease-out forwards; }
+        </style>
+
+        <!-- WEATHER WIDGET BOX (Aligned 75% to the right) -->
+        <section id="weather-box" class="w-full max-w-7xl mx-auto flex justify-end mb-22 mt-4">
+            <!-- Compact, Side-by-Side Weather Card -->
+            <div id="weather-card"
+                class="p-1 pr-4 sm:w-88 flex justify-between items-center  rounded-xl shadow-xl shadow-[#FDD017]  border border-[#fcd059]">
+                <!-- LEFT SIDE: Image/Icon - USING FIXED USER IMAGE -->
+                <div class="flex-shrink-0 mr-1">
+                    <img id="weather-image"
+                        src="{{ url_for('static', filename='weather.png') }}"
+                        alt="Weather Icon" class="w-48 h-28 object-cover mt-1  " />
+                </div>
+                <!-- RIGHT SIDE: Dynamic Data Stack (Compact) -->
+                <div class="flex flex-col items-end space-y-0.9 py-4">
+                    <!-- Location -->
+                    <div id="location-label" class="text-xl text-[#b45f06] font-bold tracking-wider uppercase">...</div>
+                    <!-- Date -->
+                    <div id="current-date" class="text-xl font-bold text-[#e75b0f]">
+                        <span id='day-name'>--</span> • <span id='date-num'>--</span>
+                    </div>
+                    <!-- Temperature -->
+                    <div id="temp-value" class="text-3xl font-extrabold text-[#e75b0f] flex items-center">
+                        <i data-lucide="thermometer" class="w-10 h-10 inline-block  text-[#FEBA17]"></i>
+                        <span id='temp-num' class="">--</span>°F
+                    </div>
+                    <!-- Humidity -->
+                    <div id="humidity-value" class="text-xl font-medium text-gray-600 flex items-center">
+                        <i data-lucide="droplet" class="w-8 h-8 inline-block text-[#1abc9c]"></i>
+                        Hum: <span id='hum-num' class="text-xl">--</span>%
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 1. MAIN PLANNER SECTION: Task List (Left, now fixed width) and Calendar (Right, now flexible width) -->
+      <section id="planner-section" class="w-full flex flex-col items-center"> 
+        <h2 class="text-5xl font-bold text-[#8b0000] text-center w-full mb-16" 
+            style="-webkit-text-stroke:1px #ecdc47;">
+            Planner & Calendar View
+        </h2>
+        
+        <!-- Main Layout Container - Uses flex on desktop -->
+        <div id="calendar-container-wrapper" class="w-full max-w-8xl mx-auto">
+            
+            <!-- LEFT COLUMN: Task List with Expand/Collapse -->
+            <div id="upcoming-panel" class="min-h-[720px] p-6 border-2 border-[#FFBF00]">
+                <div class="flex items-start justify-between gap-1 mb-4 border-2 border-[#EEDC82] ">
+                    <div>
+                        <h2 class="text-3xl font-bold text-b45f06[#] inline-block"
+                        style="-webkit-text-stroke:1px #FFBF00; text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 3px; text-decoration-color: #f3cf64;">
+                        <span class="text-[#660000]">Tasks for Date:</span>
+                        </h2>
+                        <!-- This shows the currently selected date, serving as the link to the calendar -->
+                        <p id="upcoming-range" class="text-[#660000] font-semibold text-lg mt-1"></p>
+                    </div>
+                </div>
+                
+                <!-- REVISED: Task Input Form for User-Friendly Experience -->
+                <form id="new-task-form" class="hidden flex flex-col gap-2 mb-6 p-4 bg-white rounded-lg shadow-inner border border-[#f1ddb7]">
+                    <h3 class="text-xl font-bold text-[#660000] mb-2 border-b pb-1">Add New Task / Schedule</h3>
+                    
+                    <!-- Task Title -->
+                    <input
+                        id="new-task-input"
+                        type="text"
+                        placeholder="Enter task title (e.g., Client Meeting)"
+                        class="flex-grow p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#fcd059] focus:border-[#fcd059] transition duration-150"
+                        autocomplete="off"
+                        required
+                    >
+                    
+                    <!-- Task Time -->
+                    <div class="flex gap-2">
+                        <label for="new-task-time" class="p-2 text-[#4A412A] font-medium">Scheduled Time:</label>
+                        <input
+                            id="new-task-time"
+                            type="time"
+                            value="10:00"
+                            class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#fcd059] focus:border-[#fcd059] transition duration-150"
+                            required>
+                    </div>
+
+                    <!-- Task Details (Description) -->
+                    <textarea
+                        id="new-task-details"
+                        placeholder="Add task details or meeting agenda..."
+                        rows="3"
+                        class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#fcd059] focus:border-[#fcd059] transition duration-150"
+                    ></textarea>
+                    
+                    <!-- Mock Image/Meeting URL Input -->
+                    <input
+                        id="new-task-image-url"
+                        type="url"
+                        placeholder="Optional: Meeting Image URL (e.g., photo of map/person)"
+                        class="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#fcd059] focus:border-[#fcd059] transition duration-150"
+                    >
+
+                    <button
+                        type="submit"
+                        class="bg-[#F7E7CE] hover:bg-[#FFFFFF] text-[#FFD700] text-2xl font-serif border-2 border-[#FFD800] py-3 px-4 rounded-md shadow-md 
+                        transition duration-150 active:scale-[0.98] w-full mt-2">
+                        Schedule Task to Save
+                    </button>
+
+                </form>
+
+                <!-- Task rows container (Now contains the expandable items) -->
+                <div id="taskGrid" class="grid grid-cols-1 gap-3 mt-6">
+                    <!-- Task items will be dynamically generated and inserted here -->
+                    <div class="text-center py-8 text-gray-500 italic">Select a date on the calendar to load tasks.</div>
+                </div>
+
+                <div id="upcoming-controls" class="flex justify-center gap-2 mt-8 hidden">
+                    <button id="upcomingPrev" class="upcoming-btn p-2 rounded-lg" title="Previous window">◀</button>
+                    <button id="upcomingNext" class="upcoming-btn p-2 rounded-lg" title="Next window">▶</button>
+                    <!-- Note: Removed the 7/10 day toggle as the requirement changed to time slots -->
+                </div>
+                <div id="upcoming-list" aria-live="polite" class="mt-4 hidden">
+                    <!-- 7-day list is hidden as the time slots are the primary focus -->
+                </div>
+            </div>
+            
+            <!-- RIGHT COLUMN: Calendar View -->
+            <div id="calendar-column" class="min-h-[720px]">
+                <div id="calendar-container" class="calendar-border border-2 border-[#FFDF00]" >
+                    <div id="calendar-background" class="w-full">
+                        <div id="clockDisplay" class="text-center text-2xl text-[#000000] mb-4"></div>
+                        <!-- Navigation and Month/Year Display -->
+                        <div class="flex justify-between items-center mb-4">
+                            <!-- Updated Prev Button -->
+                            <button
+                                id="prevMonth"
+                                class="p-2 rounded-full transition shadow-lg bg-[#fcd059] text-white hover:bg-[#bf8a04]"
+                                title="Previous Month">
+                                <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                            </button>
+                            <div id="currentMonthYear" class="text-2xl font-extrabold tracking-wider text-[#b45f06]
+                                                  p-1.5  border-2 border-[#ffcb05] rounded-lg shadow-xl text-shadow">
+                                <!-- Month and Year will be injected here -->
+                            </div>
+                            <!-- Updated Next Button -->
+                            <button
+                                id="nextMonth"
+                                class="p-2 rounded-full transition shadow-lg bg-[#fcd059] text-white hover:bg-[#bf8a04]"
+                                title="Next Month">
+                                <i data-lucide="chevron-right" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+
+                        <!-- Single Wrapper for Grid Layout -->
+                        <div id="calendar-grid-wrapper">
+                            <!-- Day Labels -->
+                            <div id="day-labels" class="text-xs font-bold uppercase tracking-wider mb-1 text-shadow contents">
+                                <div class="day-label text-[#D10000]">Sun</div>
+                                <div class="day-label text-[#b26458]">Mon</div>
+                                <div class="day-label text-[#b26458]">Tue</div>
+                                <div class="day-label text-[#b26458]">Wed</div>
+                                <div class="day-label text-[#b26458]">Thu</div>
+                                <div class="day-label text-[#b26458]">Fri</div>
+                                <div class="day-label text-[#D10000]">Sat</div>
+                            </div>
+
+                            <!-- Dates Grid -->
+                            <div id="dates-container" class="contents">
+                                <!-- Dates will be injected here by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </section>
+      <!-- END CALENDAR SECTION -->
+
+      <!-- NEW: NEWS FEED SECTION -->
+      <section id="news-feed-section" class="w-full max-w-7xl mx-auto mt-56 mb-[40px]">
+          <h2 class="text-5xl font-bold text-[#b45f06] text-center w-full mb-16" 
+              style="-webkit-text-stroke:1px #ffd95c;">
+              Local & Global News Feed - Live
+          </h2>
+          <div id="news-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <!-- Loading State -->
+              <div id="news-loading" class="col-span-full text-center py-10  text-[#ffbf00] italic border-4 border-dashed border-[#f1ddb7] rounded-lg">
+                  <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-[#fcd059] inline-block mr-2"></i> Fetching live world headlines via RSS proxy...
+              </div>
+          </div>
+      </section>
+      <!-- END NEWS FEED SECTION -->
+    <!--Dynamic News comes locally & Internationally-->
+        
+      
+    </main>
+    
+    <!-- FOOTER -->
+    <footer class="text-gray-800 py-10 mt-82 border-t border-gray-300 bg-transparent">
+    <div class="max-w-7xl mx-auto px-6 text-center mt-4">
+        <h3 class="text-5xl font-serif text-[#ffcc00]  tracking-wide">AptiCraft</h3>
+
+        <div class="flex justify-center space-x-6 mt-12">
+        <a href="https://www.linkedin.com/in/afsanausa/" target="_blank" class="text-[#626367] hover:text-[#ffaf00] text-2xl">LinkedIn</a>
+        <span class="text-gray-500">•</span>
+        <a href="https://github.com/Afsana721/flask_apps" target="_blank" class="text-[#626367] hover:text-[#ffaf00] text-2xl">GitHub</a>
+        <span class="text-gray-500">•</span>
+        <a href="https://flask-apps-e45a.onrender.com/" target="_blank" class="text-[#626367] hover:text-[#ffaf00] text-2xl">Portfolio</a>
+        <span class="text-gray-500">•</span>
+        <a href="https://www.openqquantify.com/" target="_blank" class="text-[#626367] hover:text-[#ffaf00] text-2xl">OpenQQuantify</a>
+        </div>
+
+        <p class="text-xs mt-6 text-gray-600">© 2026 AptiCraft • All rights reserved</p>
+    </div>
+    </footer>
+
+    
+    <!-- Floating Notification Box -->
+    <div id="notification-box"></div>
+
+    <!-- JS code to manage and link to DOM --> 
+    <script>
+        // =========================================================================
+        // Mock Data for Tasks 
+        // =========================================================================
+        const MOCK_TASKS = [
+            { 
+                time: "13:00", 
+                title: "Review Project Scope", 
+                details: "Final check of the project's features list and client sign-off document. Look for scope creep.", 
+                priority: "High",
+                meeting_image_url: "https://placehold.co/150x100/fcd059/ffffff?text=Scope+Doc" // Mock image
+            },
+            { 
+                time: "15:00", 
+                title: "Team Sync-up", 
+                details: "Quick stand-up meeting with the development team. Discuss blockers and next steps.", 
+                priority: "Medium" 
+            },
+            { 
+                time: "17:00", 
+                title: "Email Clients & Vendors", 
+                details: "Respond to all outstanding client inquiries and follow up on pending vendor invoices.", 
+                priority: "Low" 
+            },
+            { 
+                time: "19:00", 
+                title: "Personal Workout", 
+                details: "Gym session: Chest and Arms. Don't skip it!", 
+                priority: "Personal" 
+            },
+        ];
+        
+        // New Array for User-Added Tasks (In-Memory Storage)
+        let dynamicTasks = []; 
+
+        // ==========================
+        //  Utility Functions
+        // ==========================
+        
+        // Helper to convert 24h time string (HH:MM) to 12h format (H:MM AM/PM)
+        function timeTo12Hour(time24h) {
+            if (!time24h) return "TBD";
+            const [hour, minute] = time24h.split(':').map(Number);
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12; // Convert 0 to 12
+            return `${displayHour}:${String(minute).padStart(2, '0')} ${period}`;
+        }
+        
+        // Helper to show a temporary notification message
+        function showNotification(message) {
+            const box = document.getElementById('notification-box');
+            box.innerHTML = `<i data-lucide="bell" class="w-5 h-5 mr-2 inline-block"></i> ${message}`;
+            box.classList.add('visible');
+            lucide.createIcons();
+
+            setTimeout(() => {
+                box.classList.remove('visible');
+            }, 3000);
+        }
+
+        // --- Check if the date is in the past ---
+        const today = new Date();
+        function isPastDate(date) {
+            // Get the start of today (midnight) for comparison
+            const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            // Get the start of the selected date (midnight)
+            const dateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            
+            // Return true if the selected date is strictly before today
+            return dateStart < todayStart;
+        }
+
+        // =========================================================================
+        // CORE FEATURE: Email Notification Mock Function (for Flask integration)
+        // =========================================================================
+        function setNotification(taskId, taskTitle, scheduledDate, scheduledTime, creationTimestamp) {
+            
+            // 1. Gather all necessary data for the email template
+            const payload = {
+                task_id: taskId,
+                task_title: taskTitle,
+                scheduled_date: scheduledDate.toLocaleDateString(), // Date for the calendar link
+                scheduled_time: scheduledTime,                     // Time for the reminder
+                created_at: creationTimestamp,                     // Time the task was logged
+                reminder_interval: '30 minutes before'             // Example interval setting
+                // Include user_id from Flask session data here
+            };
+
+            console.log(`--- Mock Email Notification Triggered ---`);
+            console.log(`STATUS: READY TO CALL FLASK BACKEND ROUTE /api/schedule_email_reminder`);
+            console.log(`TASK PAYLOAD:`, payload);
+            console.log(`Scheduled Task Time: ${timeTo12Hour(scheduledTime)}`);
+            
+            // In a real application, you would make a fetch/XHR request here:
+            /*
+            fetch('/api/schedule_email_reminder', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(data => showNotification('Reminder successfully scheduled on server!'))
+            .catch(error => showNotification('Failed to schedule reminder.'));
+            */
+            
+            showNotification(`Reminder Request Sent to Server for "${taskTitle}" at ${timeTo12Hour(scheduledTime)}! (Check console for data)`);
+        }
+        
+        // ==========================
+        //  Calendar data generator
+        // ==========================
+        const calendarCreator = (year, month) => {
+            const firstDay    = new Date(year, month, 1);       // first day of this month
+            const totalDays   = new Date(year, month + 1, 0).getDate(); // total days in this month
+            const startDay    = firstDay.getDay();                // weekday index 0-6
+            const grid        = [];
+
+            // push empty slots before day 1
+            for (let i = 0; i < startDay; i++) grid.push("");
+            // push all visible days
+            for (let d = 1; d <= totalDays; d++) grid.push(d);
+
+            return grid;
+        };
+
+        // ==========================
+        //  DOM references
+        // ==========================
+        const datesContainer   = document.getElementById("dates-container");
+        const currentMonthYear = document.getElementById("currentMonthYear");
+        const upcomingRangeEl  = document.getElementById("upcoming-range");
+        const taskGridEl       = document.getElementById("taskGrid");
+        const newTaskForm      = document.getElementById("new-task-form"); 
+        const newTaskInput     = document.getElementById("new-task-input"); 
+        const newTaskTimeInput = document.getElementById("new-task-time");
+        // DOM References for the enhanced form
+        const newTaskDetailsInput = document.getElementById("new-task-details");
+        const newTaskImageInput   = document.getElementById("new-task-image-url");
+        // DOM Reference for News Feed
+        const newsGridEl       = document.getElementById("news-grid");
+
+
+        // ==========================
+        //  State
+        // ==========================
+        let selectedDate = new Date(); // Holds the currently selected Date object
+        let curYear      = today.getFullYear();
+        let curMonth     = today.getMonth();
+
+
+        // ==========================
+        //  Task List Management (Expand/Collapse & Render)
+        // ==========================
+
+        // Handler for expanding/collapsing a task item
+        function toggleTaskDetails(event) {
+            const header = event.currentTarget;
+            const isExpanded = header.getAttribute('data-expanded') === 'true';
+
+            // Collapse all others before expanding this one
+            document.querySelectorAll('.task-header[data-expanded="true"]').forEach(h => {
+                h.setAttribute('data-expanded', 'false');
+            });
+            
+            if (!isExpanded) {
+                // Expand the clicked one
+                header.setAttribute('data-expanded', 'true');
+            }
+            lucide.createIcons(); // Re-render Lucide icons if needed
+        }
+        
+        // Renders the expandable task items for the selected day
+        function renderTaskSlots(date) {
+            if (!taskGridEl) return;
+            taskGridEl.innerHTML = ""; // Clear old tasks
+
+            const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+            const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD key for storage
+            
+            // 1. Filter dynamic tasks for the selected day
+            const dynamicTasksForDate = dynamicTasks.filter(t => t.dateKey === dateKey);
+            
+            // 2. Mock logic: determine if mock tasks should be included (every other day)
+            const includeMockTasks = date.getDate() % 2 === 0; 
+
+            // Combine all tasks for the day
+            const allTasks = [...dynamicTasksForDate];
+            if (includeMockTasks) {
+                // Assign a mock creation time to mock tasks for demonstration
+                const now = new Date();
+                MOCK_TASKS.forEach(t => {
+                    t.created_at = t.created_at || now.toISOString(); // Ensure mock tasks have a creation time if missing
+                    t.dateKey = dateKey;
+                });
+                allTasks.push(...MOCK_TASKS);
+            }
+            
+            // 3. Sort tasks by time (24-hour string)
+            allTasks.sort((a, b) => {
+                if (a.time < b.time) return -1;
+                if (a.time > b.time) return 1;
+                return 0;
+            });
+            
+            // 4. Render the sorted tasks
+            if (allTasks.length === 0) {
+                let message = "No scheduled tasks found.";
+                if (isPastDate(date)) {
+                    message = `No tasks were scheduled for ${dateStr}.`;
+                } else {
+                    message = `No scheduled tasks found for ${dateStr}. Click 'Schedule Task' above to add one!`;
+                }
+
+                taskGridEl.innerHTML = `<div class="text-center py-6 text-gray-500 italic text-lg border-2 border-dashed border-[#f1ddb7] rounded-lg">
+                    ${message}
+                    </div>`;
+                return;
+            }
+
+                      allTasks.forEach((task, index) => {
+                // Use a combination of dateKey and index as a unique ID for the notification mock
+                const taskId = `${dateKey}-${index}`; 
+                const displayTime = timeTo12Hour(task.time);
+                
+                const taskItem = document.createElement("div");
+                taskItem.className = `task-item bg-[--task-detail-bg] p-3 rounded-lg border border-[#f3cf64]`;
+                taskItem.dataset.slot = task.time;
+
+                // Determine content based on task existence
+                let titleColor = "text-[#b45f06]"; // Default: Brown
+                if (task.priority === "High") titleColor = "text-red-600";
+                if (task.priority === "Personal") titleColor = "text-blue-600";
+                if (task.priority === "Custom") titleColor = "text-green-600";
+                
+                // Content for the expanded task details
+                let detailsHtml = `
+                    <p class="mb-2 font-semibold text-[#8b4513] border-b border-dashed pb-1">Task Details</p>
+                    <p class="text-sm">${task.details || 'No additional description provided.'}</p>
+                    <p class="mt-3 text-xs text-gray-500 font-medium">Priority: ${task.priority || 'Medium'}.</p>
+                `;
+
+                // FEATURE: Display the meeting image/URL placeholder
+                if (task.meeting_image_url) {
+                    detailsHtml += `
+                        <div class="mt-4 p-2 bg-gray-50 rounded-lg border">
+                            <p class="text-sm font-semibold mb-2">Meeting Image/Link Preview (Mock)</p>
+                            <img src="${task.meeting_image_url}" onerror="this.onerror=null; this.src='https://placehold.co/150x100/aaaaaa/000000?text=Image+Not+Found'" 
+                                 class="w-full max-h-32 object-cover rounded shadow-md" alt="Meeting asset">
+                            <a href="${task.meeting_image_url}" target="_blank" class="text-xs text-blue-500 hover:underline mt-1 block truncate">View Link</a>
+                        </div>
+                    `;
+                }
+
+                // FEATURE: Display Task Time Tracking (Creation vs. Scheduled)
+                if (task.created_at) {
+                     const creationTime = new Date(task.created_at).toLocaleString();
+                     detailsHtml += `
+                        <p class="mt-4 text-xs text-gray-600">
+                            <i data-lucide="clock" class="w-3 h-3 mr-1 inline-block"></i> Task Logged (Created At): ${creationTime}
+                        </p>
+                     `;
+                }
+                
+                // Notification Button (Passes all required data for the Flask server)
+                // Disable reminder button for past dates, but show it.
+                const isPast = isPastDate(date);
+                const buttonDisabledClass = isPast ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600';
+                const buttonText = isPast ? 'Reminder Not Available (Past Date)' : '<i data-lucide="mail" class="w-4 h-4 mr-2 inline-block"></i> Set Email Reminder';
+
+                detailsHtml += `
+                    <button id="notify-${taskId}" 
+                            data-title="${task.title}" 
+                            data-time="${task.time}"
+                            data-created-at="${task.created_at || new Date().toISOString()}"
+                            ${isPast ? 'disabled' : ''}
+                            class="mt-4 w-full text-center bg-blue-500 ${buttonDisabledClass} text-white font-semibold py-2 px-4 rounded-md shadow-md transition duration-150">
+                            ${buttonText}
+                    </button>
+                `;
+                
+                taskItem.innerHTML = `
+                    <div class="task-header flex justify-between items-center cursor-pointer p-2 -m-2 rounded-md hover:bg-[#f1ddb7]/50 transition duration-150" data-expanded="false">
+                        <span class="text-lg font-bold ${titleColor} transition">${displayTime}: ${task.title}</span>
+                        <div class="relative ml-2">
+                            <button class="dot-menu-btn p-1 rounded-full hover:bg-[#fcd059]">⋮</button>
+                            <div class="dot-menu hidden absolute right-0 mt-2 w-24 bg-white border rounded shadow-lg z-10">
+                                <button class="edit-task w-full text-left px-3 py-2 text-sm hover:bg-gray-100">Edit</button>
+                                <button class="delete-task w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-100">Delete</button>
+                            </div>
+                        </div>
+                        <button class="expand-btn p-1 rounded-full bg-[#f1ddb7] hover:bg-[#fcd059] transition shadow-sm">
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-[#8b4513] transition-transform duration-300"></i>
+                        </button>
+                    </div>
+                    <div class="task-details pt-0">
+                        <div class="pt-3 border-t mt-3 border-[#f8f4f4] text-sm text-[#5c4033] bg-white p-3 rounded-lg shadow-inner">
+                            ${detailsHtml}
+                        </div>
+                    </div>
+                `;
+
+                // Add the toggle listener to the header
+                const header = taskItem.querySelector('.task-header');
+                header.addEventListener("click", toggleTaskDetails);
+                
+                const dotBtn = taskItem.querySelector('.dot-menu-btn');
+                const dotMenu = taskItem.querySelector('.dot-menu');
+                const editBtn = taskItem.querySelector('.edit-task');
+                const deleteBtn = taskItem.querySelector('.delete-task');
+
+                dotBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dotMenu.classList.toggle('hidden');
+                });
+
+                editBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    alert('Edit clicked for: ' + task.title);
+                });
+
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    taskItem.remove();
+                });
+                
+                // Add the notification listener ONLY if not past date
+                //const notifyButton = document.getElementById(`notify-${taskId}`);
+                const notifyButton = taskItem.querySelector(`#notify-${taskId}`);
+
+                if (notifyButton && !isPast) {
+                    notifyButton.addEventListener('click', (e) => {
+                        // Pass the full context to the mock notification service
+                        const creationTime = e.currentTarget.dataset.createdAt;
+                        setNotification(taskId, task.title, date, task.time, creationTime);
+                    });
+                }
+                
+                taskGridEl.appendChild(taskItem);
+            });
+
+            lucide.createIcons(); // Important: Initialize lucide icons for the chevron and mail
+        }
+
+
+        // ==========================
+        //  Selected date handling (Calendar Link)
+        // ==========================
+        function setSelected(y, m, d) {
+            selectedDate = new Date(y, m, d);
+            const isPast = isPastDate(selectedDate); // Check if the date is in the past
+            
+            // 1. Update Tasks List header (The user knows which date they are viewing/adding for)
+            if (upcomingRangeEl) {
+                const dateLabel = selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+                upcomingRangeEl.textContent = dateLabel;
+            }
+
+            // 2. Render the expandable task slots for the selected day
+            renderTaskSlots(selectedDate);
+            
+            // 3. Highlight the selected calendar cell
+            document.querySelectorAll(".date-cell").forEach(cell => {
+                cell.classList.remove("selected-date");
+                if (
+                    !cell.classList.contains("empty-cell") &&
+                    Number(cell.textContent) === d
+                ) {
+                    // Only apply 'selected-date' if the cell is in the current month view
+                    if (y === curYear && m === curMonth) {
+                        cell.classList.add("selected-date");
+                    }
+                }
+            });
+            
+            // --- Control Task Input Form visibility ---
+            if (newTaskForm) {
+                if (isPast) {
+                    // Hide the form completely for past dates
+                    newTaskForm.classList.add('hidden');
+                } else {
+                    // Show the form for today or future dates
+                    newTaskForm.classList.remove('hidden');
+                }
+            }
+            
+            // 4. Optional: Scroll to the task list panel on date click for better UX on mobile/smaller screens
+            document.getElementById('upcoming-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // ==========================
+        //  Render calendar grid
+     // ==========================
+       function renderCalendar(y, m) {
+      // rotate background images
+      const imgs=[
+        "https://thumbs.dreamstime.com/b/elegant-drawing-white-dove-wings-spread-light-rays-emanating-symbol-hope-peace-new-beginnings-ai-generated-413456259.jpg",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSbXDY-JxsFruAjxKk5D-4BiEH8dToAWkPKNg&s",
+        "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRGqLcd5nub4CWWVmQ-TxcuKMkxO30oQ3RtPA&s",
+        "https://raw.githubusercontent.com/Afsana721/PortfolioProjects/main/card4.png"
+      ];
+      const idx = m % imgs.length;
+      const bg = document.getElementById('calendar-background');
+      bg.style.backgroundImage = `url(${imgs[idx]})`;
+      bg.style.backgroundSize = "cover";
+      bg.style.backgroundPosition = "center";
+      bg.style.backgroundRepeat = "no-repeat";
+      bg.style.width = "100%";
+      bg.style.height = "800px";
+      // clear old cells
+            datesContainer.innerHTML = ""; // clear old cells
+
+            const grid = calendarCreator(y, m); // get blanks + days
+
+            // Month / Year title (e.g., January 2026)
+            currentMonthYear.textContent = new Date(y, m).toLocaleString(
+                "en-US",
+                { month: "long", year: "numeric" }
+            );
+
+            // Create each cell and attach click for non-empty days
+            grid.forEach(num => {
+                const cell = document.createElement("div");
+                cell.className = "date-cell" + (num === "" ? " empty-cell" : "");
+                cell.textContent = num;
+
+                if (num !== "") {
+                    // Check if today
+                    if (
+                        y === today.getFullYear() &&
+                        m === today.getMonth() &&
+                        num === today.getDate()
+                    ) {
+                        cell.classList.add("today");
+                    }
+                    
+                    // Check if this date is the current selection and highlight it
+                    if (selectedDate && 
+                        y === selectedDate.getFullYear() && 
+                        m === selectedDate.getMonth() && 
+                        num === selectedDate.getDate()) {
+                        cell.classList.add("selected-date");
+                    }
+                    
+                    // Add click listener (triggers the setSelected flow)
+                    cell.addEventListener("click", async () => {
+                        // 🔐 Auth check before selecting date
+                        const res = await fetch('/check-auth');
+                        const data = await res.json();
+                        if (!data.logged_in) {
+                            const msg = document.createElement('div');
+                            msg.textContent = 'Please login to schedule tasks.';
+                            msg.style.position = 'absolute';
+                            msg.style.top = '10px';
+                            msg.style.left = '10px';
+                            msg.style.background = '#fff1ae';
+                            msg.style.padding = '8px 12px';
+                            msg.style.border = '2px solid #ffcb05';
+                            msg.style.borderRadius = '6px';
+                            msg.style.zIndex = '100';
+                            document.getElementById('calendar-column').appendChild(msg);
+                            setTimeout(() => msg.remove(), 2500);
+                            return;
+                        }
+                        setSelected(y, m, num);
+                    });
+                }
+
+                datesContainer.appendChild(cell);
+            });
+            lucide.createIcons();
+        }
+
+
+        // =========================================================================
+        // FEATURE: Task Submission Handler (Captures all necessary data)
+        // =========================================================================
+
+
+
+
+
+        function handleNewTask(e) {
+            e.preventDefault();
+            
+            // --- CHECK: Prevent submission for past dates ---
+            if (isPastDate(selectedDate)) {
+                 showNotification(`Cannot schedule a new task: ${selectedDate.toLocaleDateString()} is in the past.`);
+                 // Prevent focus on the inputs for a past date if the form was somehow visible
+                 newTaskInput.blur();
+                 newTaskTimeInput.blur();
+                 newTaskDetailsInput.blur();
+                 newTaskImageInput.blur();
+                 return;
+            }
+            // --- END CHECK ---
+
+            const title = newTaskInput.value.trim();
+            const time24h = newTaskTimeInput.value; // e.g., "14:30"
+            const details = newTaskDetailsInput.value.trim();
+            const imageUrl = newTaskImageInput.value.trim();
+            
+            // Basic validation
+            if (!title || !time24h) {
+                 showNotification("Task title and time are required!");
+                 return;
+            }
+            
+            const dateKey = selectedDate.toISOString().split('T')[0];
+            
+            // FEATURE: Time Management - Capture creation time
+            const createdAt = new Date().toISOString(); 
+            
+            const newTask = { 
+                dateKey: dateKey, 
+                time: time24h, // Stored as 24h string for easy sorting (Scheduled Time)
+                title: title, 
+                details: details, 
+                meeting_image_url: imageUrl, // Mock for image/link
+                priority: "Custom",
+                created_at: createdAt // Time the user added/logged the task
+            };
+            
+            dynamicTasks.push(newTask);
+            
+            // Clear only the optional fields, keep time set for quick entry
+            newTaskInput.value = '';
+            newTaskDetailsInput.value = '';
+            newTaskImageInput.value = '';
+            
+            // Re-render the task list to show the new item
+            renderTaskSlots(selectedDate);
+            // Re-render the calendar to show the event marker (only today is highlighted now)
+            renderCalendar(curYear, curMonth);
+            
+            showNotification(`Task "${title}" scheduled for ${selectedDate.toLocaleDateString()} at ${timeTo12Hour(time24h)}!`);
+            // ✉️ Send to server (Neon)
+            fetch('/add-task', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newTask)
+            })
+            .then(r => r.json())
+            .then(d => console.log('Saved:', d))
+            .catch(err => console.error('Save failed:', err));
+
+            // 🔍 Debug log
+            console.log("Task added, saved request sent:", newTask);
+
+        }
+
+        // =========================================================================
+        // DYNAMIC NEWS FEATURE: Fetching Live RSS Feed
+        // =========================================================================
+
+        // Renders the news articles into the grid
+        function renderNewsFeed(articles) {
+            // Clear the loading indicator
+            newsGridEl.innerHTML = ''; 
+
+            if (articles.length === 0) {
+                 newsGridEl.innerHTML = `
+                    <div class="col-span-full text-center py-10 text-[#5B0A0A] italic">
+                        No articles found. The feed may be temporarily unavailable.
+                    </div>`;
+                return;
+            }
+
+            // Map and insert the live articles
+            const htmlContent = articles.slice(0, 6).map(article => { // Limit to 6 articles
+                
+                // Google News descriptions often contain HTML, so we strip tags for a clean summary
+                const summary = article.description ? article.description.replace(/<[^>]*>/g, '').substring(0, 150) + '...' : 'Click to read more.';
+                
+                // Fallback image/source logic
+                const source = article.source || 'World News';
+                const imagePlaceholder = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3w3Sm4dCfmu8fXXRCXodUEeJvOLn196zdHA&s';
+                // The RSS feed doesn't reliably include a high-quality image URL, so we use a placeholder
+                
+                return `
+                    <a href="${article.link}" target="_blank" class="news-card block bg-[#FDFBF9] backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-[#ffbf00]">
+                        <!-- Image -->
+                        <img src="${imagePlaceholder}" 
+                             alt="${article.title}" class="w-full h-32 object-cover">
+                        <div class="p-4">
+                            <!-- Title -->
+                            <h3 class="text-lg font-bold text-[#36454F] mb-1">${article.title}</h3>
+                            <!-- Source -->
+                            <p class="text-xs text-[#D88A1C] font-medium mb-3 flex items-center">
+                                <i data-lucide="newspaper" class="w-3 h-3 mr-1"></i> ${source}
+                            </p>
+                            <!-- Summary -->
+                            <p class="text-sm text-[#5B0A0A]">${summary}</p>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+
+            newsGridEl.innerHTML = htmlContent;
+            lucide.createIcons();
+        }
+
+        // Core Fetch Function: Uses the Google News RSS feed via a free proxy service
+        async function fetchAndRenderNews() {
+            // Google News RSS URL for top world headlines
+            const GOOGLE_NEWS_RSS = 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en';
+            
+            // Free proxy service to convert RSS (XML) to CORS-friendly JSON
+            const PROXY_API_URL = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(GOOGLE_NEWS_RSS)}`;
+
+            console.log(`--- Dynamic News Fetch Initiated ---`);
+            console.log(`Fetching RSS via proxy: ${PROXY_API_URL}`);
+            
+            // Set up a simple retry mechanism
+            const maxRetries = 3;
+            let attempt = 0;
+
+            const executeFetch = async () => {
+                try {
+                    const response = await fetch(PROXY_API_URL);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    
+                    const data = await response.json();
+
+                    if (data.status === 'ok' && data.items) {
+                        renderNewsFeed(data.items);
+                        console.log(`Successfully loaded ${data.items.length} live articles.`);
+                    } else {
+                         throw new Error(`Failed to parse RSS data. Status: ${data.status}`);
+                    }
+                } catch (error) {
+                    console.error(`Live News fetch failed (Attempt ${attempt + 1}):`, error.message);
+                    if (attempt < maxRetries - 1) {
+                        attempt++;
+                        const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        await executeFetch(); // Retry
+                    } else {
+                        newsGridEl.innerHTML = `
+                            <div class="col-span-full text-center py-10 text-red-500 italic">
+                                News Feed Failed to load after multiple attempts. (Proxy or Source Error).
+                            </div>`;
+                    }
+                }
+            };
+
+            await executeFetch();
+        }
+
+
+        // ==========================
+        //  Clock & Initial render
+        // ==========================
+        const clockEl = document.getElementById('clockDisplay');
+        function updateClock(){
+            const now = new Date();
+            clockEl.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+        }
+
+        function initApp() {
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            // Initialise selection with today (drives Tasks List + 7-day window)
+            setSelected(curYear, curMonth, today.getDate());
+            renderCalendar(curYear, curMonth);
+            
+            // NEW: Load the Dynamic News Feed
+            fetchAndRenderNews(); 
+
+            // ==========================
+            //  Month navigation buttons
+            // ==========================
+            document.getElementById("prevMonth").addEventListener("click", () => {
+                curMonth--;
+                if (curMonth < 0) {
+                    curMonth = 11;
+                    curYear--;
+                }
+                renderCalendar(curYear, curMonth);
+                // Keep the selection on the 1st of the new month if the previous selection is out of range
+                setSelected(curYear, curMonth, 1);
+            });
+
+            document.getElementById("nextMonth").addEventListener("click", () => {
+                curMonth++;
+                if (curMonth > 11) {
+                    curMonth = 0;
+                    curYear++;
+                }
+                renderCalendar(curYear, curMonth);
+                // Keep the selection on the 1st of the new month if the previous selection is out of range
+                setSelected(curYear, curMonth, 1);
+            });
+            
+            // Attach the new task form handler
+            newTaskForm.addEventListener('submit', handleNewTask);
+            
+            
+            // ==========================
+            //  Weather Widget Logic (Fixed to Austin, TX)
+            // ==========================
+            const dayNameEl = document.getElementById('day-name');
+            const dateNumEl = document.getElementById('date-num');
+            const tempNumEl = document.getElementById('temp-num');
+            const humNumEl = document.getElementById('hum-num');
+            const locLabelEl = document.getElementById('location-label');
+            // The image element is now static, no need to reference it for dynamic changes
+            // const weatherImageEl = document.getElementById('weather-image');
+
+            // 1. Set Date/Day
+            if (dayNameEl && dateNumEl) {
+                const now = new Date();
+                dayNameEl.textContent = now.toLocaleDateString('en-US', { weekday: 'short' });
+                dateNumEl.textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+            
+            // 2. Fetch Weather Data (with exponential backoff)
+            const fetchWeather = (latitude, longitude, locationName = 'Local') => {
+                locLabelEl.textContent = `Loading ${locationName}...`;
+                // Using Fahrenheit for better general use in the US, and asking for weather_code
+                const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code&temperature_unit=fahrenheit&timezone=auto`; 
+                
+                const maxRetries = 3;
+                let attempt = 0;
+
+                const executeFetch = async () => {
+                    try {
+                        const response = await fetch(apiUrl);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const data = await response.json();
+                        
+                        if (data.current) {
+                            // Update elements
+                            tempNumEl.textContent = Math.round(data.current.temperature_2m);
+                            humNumEl.textContent = data.current.relative_humidity_2m;
+                            locLabelEl.textContent = locationName;
+                        } else {
+                             throw new Error("Invalid weather data structure.");
+                        }
+                    } catch (error) {
+                        console.error(`Weather fetch failed (Attempt ${attempt + 1}):`, error.message);
+                        if (attempt < maxRetries - 1) {
+                            attempt++;
+                            const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            await executeFetch(); // Retry
+                        } else {
+                            tempNumEl.textContent = 'N/A';
+                            humNumEl.textContent = 'N/A';
+                            locLabelEl.textContent = `${locationName} (Failed)`;
+                        }
+                    }
+                };
+
+                executeFetch();
+            };
+
+            // 3. FORCE Default to Austin, TX (Latitude/Longitude) to bypass local geolocation issues
+            const defaultLat = 30.2672; 
+            const defaultLon = -97.7431;
+            const defaultLocName = 'Austin, TX';
+            
+            // Call fetchWeather directly with Austin's coordinates.
+            fetchWeather(defaultLat, defaultLon, defaultLocName);
+            
+            // ==========================
+            //  Three.js Setup (subtle background animation)
+            // ==========================
+            // Basic setup to ensure the canvas is initialized, even if it's empty
+            const canvas = document.getElementById('threejs-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / 550, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true });
+            renderer.setSize(window.innerWidth, 550);
+            camera.position.z = 5;
+
+            // Simple geometry: Gold particles
+            const geometry = new THREE.IcosahedronGeometry(0.05);
+            const material = new THREE.MeshBasicMaterial({ color: 0xffd700 }); 
+            const particles = [];
+
+            for (let i = 0; i < 50; i++) {
+                const particle = new THREE.Mesh(geometry, material);
+                particle.position.x = (Math.random() - 0.5) * 10;
+                particle.position.y = (Math.random() - 0.5) * 10;
+                particle.position.z = (Math.random() - 0.5) * 10;
+                scene.add(particle);
+                particles.push(particle);
+            }
+
+            const animate = function () {
+                requestAnimationFrame(animate);
+
+                // Simple movement
+                particles.forEach(p => {
+                    p.rotation.x += 0.005;
+                    p.rotation.y += 0.01;
+                    p.position.y -= 0.001;
+                    if (p.position.y < -5) p.position.y = 5; // Loop the particles
+                });
+
+                renderer.render(scene, camera);
+            };
+            
+            // Only start 3D rendering if Three.js is loaded
+            if (typeof THREE !== 'undefined') {
+                animate();
+            }
+
+            window.addEventListener('resize', () => {
+                if (renderer) {
+                    const headerHeight = 550;
+                    camera.aspect = window.innerWidth / headerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, headerHeight);
+                }
+            });
+
+            // Re-render Lucide icons initially
+            lucide.createIcons();
+        }
+
+        window.onload = initApp;
+
+    </script>
+</body>
+</html>
